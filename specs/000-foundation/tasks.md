@@ -39,13 +39,13 @@
 
 **Independent Test**: Run `dotnet run --project aspire/Muntada.AppHost` and verify Aspire Dashboard opens at `http://localhost:18888`
 
-- [ ] T006 [US0.1b] Create `aspire/Muntada.AppHost/Muntada.AppHost.csproj` targeting .NET Aspire 13.2+ with Aspire.Hosting references
-- [ ] T007 [US0.1b] Create `aspire/Muntada.AppHost/Program.cs` registering all container resources: SQL Server, Redis, RabbitMQ, MinIO, LiveKit
-- [ ] T008 [US0.1b] Create `aspire/Muntada.ServiceDefaults/Muntada.ServiceDefaults.csproj` with OpenTelemetry, health check, and resilience NuGet packages
-- [ ] T009 [US0.1b] Create `aspire/Muntada.ServiceDefaults/Extensions.cs` with `AddServiceDefaults()` and `MapDefaultEndpoints()` extension methods configuring: OpenTelemetry tracing + metrics, health check endpoints (`/health`, `/health/ready`, `/health/live`), HTTP client resilience (retry, circuit breaker, timeout), structured logging via Serilog
-- [ ] T010 [US0.1b] Add Backend API project reference to AppHost `Program.cs` and wire service discovery (connection strings injected by Aspire, not hardcoded)
-- [ ] T011 [US0.1b] Add Frontend SPA to AppHost as npm project or container resource with Vite dev server
-- [ ] T012 [US0.1b] Write unit tests for `Extensions.cs` service registration in `backend/tests/Muntada.SharedKernel.Tests/Infrastructure/ServiceDefaultsTests.cs`
+- [x] T006 [US0.1b] Create `aspire/Muntada.AppHost/Muntada.AppHost.csproj` targeting .NET Aspire 13.2+ with Aspire.Hosting references
+- [x] T007 [US0.1b] Create `aspire/Muntada.AppHost/Program.cs` registering all container resources: SQL Server, Redis, RabbitMQ, MinIO, LiveKit
+- [x] T008 [US0.1b] Create `aspire/Muntada.ServiceDefaults/Muntada.ServiceDefaults.csproj` with OpenTelemetry, health check, and resilience NuGet packages
+- [x] T009 [US0.1b] Create `aspire/Muntada.ServiceDefaults/Extensions.cs` with `AddServiceDefaults()` and `MapDefaultEndpoints()` extension methods configuring: OpenTelemetry tracing + metrics, health check endpoints (`/health`, `/health/ready`, `/health/live`), HTTP client resilience (retry, circuit breaker, timeout), structured logging via Serilog
+- [x] T010 [US0.1b] Add Backend API project reference to AppHost `Program.cs` and wire service discovery (connection strings injected by Aspire, not hardcoded)
+- [x] T011 [US0.1b] Add Frontend SPA to AppHost as npm project or container resource with Vite dev server
+- [x] T012 [US0.1b] Write unit tests for `Extensions.cs` service registration in `backend/tests/Muntada.SharedKernel.Tests/Infrastructure/ServiceDefaultsTests.cs`
 
 **Checkpoint**: `dotnet run --project aspire/Muntada.AppHost` starts all services. Dashboard shows healthy status.
 
