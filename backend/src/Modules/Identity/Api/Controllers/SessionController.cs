@@ -94,11 +94,9 @@ public sealed class SessionController : ControllerBase
     }
 
     /// <summary>
-    /// Revokes a specific session by ID, or revokes all other sessions
-    /// when the <paramref name="exceptCurrent"/> query parameter is true.
+    /// Revokes a specific session by its ID.
     /// </summary>
     /// <param name="id">The session ID to revoke.</param>
-    /// <param name="exceptCurrent">When true, revokes all sessions except the current one.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>200 OK with the result.</returns>
     [HttpDelete("sessions/{id:guid}")]
