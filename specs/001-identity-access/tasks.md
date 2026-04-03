@@ -46,17 +46,17 @@
 ### Aggregates & Entities
 
 - [x] T011 Implement `User` aggregate root in `backend/src/Modules/Identity/Domain/User/User.cs` — Id (usr_), Email, PasswordHash, PhoneNumber, Status enum (Unverified/Active/Suspended/Deleted), FullName, timestamps, XML docs
-- [ ] T012 [P] Implement `Session` aggregate root in `backend/src/Modules/Identity/Domain/Session/Session.cs` — Id (ses_), UserId, TenantId, Status enum (Active/Revoked/Expired), DeviceInfo, RefreshTokenId, timestamps, Revoke() method, XML docs
-- [ ] T013 [P] Implement `RefreshToken` entity in `backend/src/Modules/Identity/Domain/Session/RefreshToken.cs` — Id, SessionId, TokenHash, Status enum, IsValid() method, XML docs
-- [ ] T014 [P] Implement `OtpChallenge` aggregate in `backend/src/Modules/Identity/Domain/Otp/OtpChallenge.cs` — Id (otp_), PhoneNumber, CodeHash, Status enum (Pending/Verified/Expired), FailedAttempts, IsValid(), IncrementFailedAttempts(), XML docs
-- [ ] T015 [P] Implement `GuestMagicLink` aggregate in `backend/src/Modules/Identity/Domain/GuestLink/GuestMagicLink.cs` — Id (lnk_), RoomOccurrenceId, CreatedBy, TokenHash (SHA256), Status enum (Active/Revoked/Expired), ExpiresAt, UsageCount, IsValid(), XML docs
-- [ ] T016 [P] Implement `PersonalAccessToken` aggregate in `backend/src/Modules/Identity/Domain/Pat/PersonalAccessToken.cs` — Id (pat_), UserId, TenantId, Name, TokenHash (bcrypt), Scopes list, Status enum (Active/Revoked), ExpiresAt, LastUsedAt, IsValid(), XML docs
-- [ ] T017 [P] Implement `PasswordResetToken` entity in `backend/src/Modules/Identity/Domain/PasswordReset/PasswordResetToken.cs` — Id (prt_), UserId, TokenHash (SHA256), Status enum (Pending/Used/Expired), ExpiresAt, IsValid(), XML docs
-- [ ] T018 [P] Implement `EmailVerificationToken` entity in `backend/src/Modules/Identity/Domain/EmailVerification/EmailVerificationToken.cs` — Id (evt_), UserId, TokenHash (SHA256), Status enum (Pending/Used/Expired), ExpiresAt, IsValid(), XML docs
+- [x] T012 [P] Implement `Session` aggregate root in `backend/src/Modules/Identity/Domain/Session/Session.cs` — Id (ses_), UserId, TenantId, Status enum (Active/Revoked/Expired), DeviceInfo, RefreshTokenId, timestamps, Revoke() method, XML docs
+- [x] T013 [P] Implement `RefreshToken` entity in `backend/src/Modules/Identity/Domain/Session/RefreshToken.cs` — Id, SessionId, TokenHash, Status enum, IsValid() method, XML docs
+- [x] T014 [P] Implement `OtpChallenge` aggregate in `backend/src/Modules/Identity/Domain/Otp/OtpChallenge.cs` — Id (otp_), PhoneNumber, CodeHash, Status enum (Pending/Verified/Expired), FailedAttempts, IsValid(), IncrementFailedAttempts(), XML docs
+- [x] T015 [P] Implement `GuestMagicLink` aggregate in `backend/src/Modules/Identity/Domain/GuestLink/GuestMagicLink.cs` — Id (lnk_), RoomOccurrenceId, CreatedBy, TokenHash (SHA256), Status enum (Active/Revoked/Expired), ExpiresAt, UsageCount, IsValid(), XML docs
+- [x] T016 [P] Implement `PersonalAccessToken` aggregate in `backend/src/Modules/Identity/Domain/Pat/PersonalAccessToken.cs` — Id (pat_), UserId, TenantId, Name, TokenHash (bcrypt), Scopes list, Status enum (Active/Revoked), ExpiresAt, LastUsedAt, IsValid(), XML docs
+- [x] T017 [P] Implement `PasswordResetToken` entity in `backend/src/Modules/Identity/Domain/PasswordReset/PasswordResetToken.cs` — Id (prt_), UserId, TokenHash (SHA256), Status enum (Pending/Used/Expired), ExpiresAt, IsValid(), XML docs
+- [x] T018 [P] Implement `EmailVerificationToken` entity in `backend/src/Modules/Identity/Domain/EmailVerification/EmailVerificationToken.cs` — Id (evt_), UserId, TokenHash (SHA256), Status enum (Pending/Used/Expired), ExpiresAt, IsValid(), XML docs
 
 ### Integration Events
 
-- [ ] T019 [P] Create integration events in `backend/src/Modules/Identity/Domain/Events/` — UserRegisteredEvent, UserEmailVerifiedEvent, UserLoggedInEvent, UserLoggedOutEvent, PasswordChangedEvent, SessionRevokedEvent, PATCreatedEvent, PATRevokedEvent — all implementing IIntegrationEvent, XML docs
+- [x] T019 [P] Create integration events in `backend/src/Modules/Identity/Domain/Events/` — UserRegisteredEvent, UserEmailVerifiedEvent, UserLoggedInEvent, UserLoggedOutEvent, PasswordChangedEvent, SessionRevokedEvent, PATCreatedEvent, PATRevokedEvent — all implementing IIntegrationEvent, XML docs
 
 ### Unit Tests for Domain
 
@@ -64,9 +64,9 @@
 - [x] T021 [P] Write unit tests for `PasswordHash` value object in `backend/tests/Modules/Identity.Tests/Domain/PasswordHashTests.cs`
 - [x] T022 [P] Write unit tests for `PhoneNumber` value object in `backend/tests/Modules/Identity.Tests/Domain/PhoneNumberTests.cs`
 - [x] T023 [P] Write unit tests for `User` aggregate (state transitions, validation) in `backend/tests/Modules/Identity.Tests/Domain/UserTests.cs`
-- [ ] T024 [P] Write unit tests for `Session` aggregate (revoke, expiry) in `backend/tests/Modules/Identity.Tests/Domain/SessionTests.cs`
-- [ ] T025 [P] Write unit tests for `OtpChallenge` (attempts, expiry, locking) in `backend/tests/Modules/Identity.Tests/Domain/OtpChallengeTests.cs`
-- [ ] T026 Verify all domain unit tests pass: `dotnet test backend/tests/Modules/Identity.Tests/`
+- [x] T024 [P] Write unit tests for `Session` aggregate (revoke, expiry) in `backend/tests/Modules/Identity.Tests/Domain/SessionTests.cs`
+- [x] T025 [P] Write unit tests for `OtpChallenge` (attempts, expiry, locking) in `backend/tests/Modules/Identity.Tests/Domain/OtpChallengeTests.cs`
+- [x] T026 Verify all domain unit tests pass: `dotnet test backend/tests/Modules/Identity.Tests/`
 
 **Checkpoint**: All domain entities compile and tested. All state machines verified.
 
