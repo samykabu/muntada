@@ -1,839 +1,303 @@
-# Epic 0: Foundation & Infrastructure - Task Breakdown
+# Tasks: Foundation & Infrastructure
 
-**Version:** 1.0
-**Epic Owner:** Platform Engineering
-**Last Updated:** 2026-04-03
+**Input**: Design documents from `/specs/000-foundation/`
+**Prerequisites**: plan.md (v1.1, post-clarification), spec.md (v1.1), research.md, data-model.md, contracts/
+**Version**: 2.0 — Updated with Aspire 13.2, Docker Hub, self-hosted LiveKit, RTK Query
+**Last Updated**: 2026-04-03
 
----
+**Tests**: Unit tests are MANDATORY per Constitution XI. Integration tests use Playwright.
 
-## Execution Overview
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing. Foundation epic user stories are infrastructure-focused (not end-user-focused), so phases map to functional areas.
 
-This epic establishes foundational infrastructure and shared patterns. All tasks must complete before dependent modules begin. Tasks are organized into 3 phases: setup, core infrastructure, and shared kernel.
+## Format: `[ID] [P?] [Story] Description`
 
----
-
-## Phase 1: Setup & Environment Foundation
-
-### T001: Mono-Repo Structure Setup [P]
-**User Story:** US-0.1
-**Priority:** P1
-**Effort:** 3 pts
-**Dependencies:** None
-
-Create directory structure for mono-repo with clear separation of backend, frontend, and infrastructure code.
-
-**Deliverables:**
-- `backend/src/SharedKernel/` (NuGet project)
-- `backend/src/Modules/{ModuleName}/Domain/`, `Application/`, `Infrastructure/`, `Api/`
-- `frontend/src/features/`, `frontend/src/shared/`
-- `infra/helm/`, `infra/k8s/`
-- `.github/workflows/`
-- Root `Makefile`, `docker-compose.yml`
-- `.env.local` template
-
-**File Locations:**
-- Create at: `/backend`, `/frontend`, `/infra` (project root)
-
-**Acceptance:**
-- Directory tree is correct per spec
-- `.gitignore` properly excludes sensitive files
-- README explains structure for new developers
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to (US0.1, US0.1b, US0.2, etc.)
+- Include exact file paths in descriptions
 
 ---
 
-### T002: Docker Compose Setup for Local Development [P]
-**User Story:** US-0.1
-**Priority:** P1
-**Effort:** 5 pts
-**Dependencies:** T001
+## Phase 1: Setup & Mono-Repo Structure
 
-Create Docker Compose file provisioning all services (SQL Server, Redis, RabbitMQ, MinIO, LiveKit) with health checks and proper ordering.
+**Purpose**: Project initialization, directory scaffolding, solution file
+**User Story**: US-0.1
 
-**Deliverables:**
-- `docker-compose.yml` with all services
-- Health check endpoints for each service
-- Named volumes for persistence
-- Network configuration
-- Environment variables binding
+- [x] T001 Create mono-repo directory structure: `aspire/`, `backend/src/`, `backend/tests/`, `frontend/src/`, `frontend/tests/`, `infra/helm/`, `infra/k8s/`, `docs/architecture/`, `docs/runbooks/`, `.github/workflows/`
+- [x] T002 [P] Create `backend/Muntada.sln` solution file with SharedKernel, Api, and test project references
+- [x] T003 [P] Create `.gitignore` with rules for .NET, Node, Docker, IDE files, `.env.local`, `*.user`
+- [x] T004 [P] Create `.env.local.template` with sensible defaults for all service connection strings
+- [x] T005 [P] Create `.editorconfig` with C# and TypeScript formatting rules (tabs/spaces, line endings)
 
-**File Locations:**
-- `docker-compose.yml` (project root)
-- `.env.local.template` (project root)
-
-**Acceptance:**
-- All services start with `docker-compose up -d`
-- All services report healthy within 60 seconds
-- Volume mounts work for code hot-reload
-- Can access services on localhost (SQL: 1433, Redis: 6379, RabbitMQ: 5672, MinIO: 9000, LiveKit: 7880)
+**Checkpoint**: Directory structure exists, solution file compiles (empty projects).
 
 ---
 
-### T003: Makefile with Local Development Targets [P]
-**User Story:** US-0.1
-**Priority:** P1
-**Effort:** 3 pts
-**Dependencies:** T001, T002
+## Phase 2: Aspire AppHost & ServiceDefaults (Blocking)
 
-Create Makefile with convenience targets for developers.
+**Purpose**: Primary local development orchestrator — MUST complete before any service can run locally
+**User Story**: US-0.1b
 
-**Deliverables:**
-- `make setup` - installs deps, runs migrations, starts services
-- `make up` - starts Docker Compose services
-- `make down` - stops services
-- `make clean` - removes volumes and containers
-- `make test` - runs all tests
-- `make docker-build` - builds backend and frontend images
-- `make logs` - tails service logs
+**Independent Test**: Run `dotnet run --project aspire/Muntada.AppHost` and verify Aspire Dashboard opens at `http://localhost:18888`
 
-**File Locations:**
-- `Makefile` (project root)
+- [x] T006 [US0.1b] Create `aspire/Muntada.AppHost/Muntada.AppHost.csproj` targeting .NET Aspire 13.2+ with Aspire.Hosting references
+- [x] T007 [US0.1b] Create `aspire/Muntada.AppHost/Program.cs` registering all container resources: SQL Server, Redis, RabbitMQ, MinIO, LiveKit
+- [x] T008 [US0.1b] Create `aspire/Muntada.ServiceDefaults/Muntada.ServiceDefaults.csproj` with OpenTelemetry, health check, and resilience NuGet packages
+- [x] T009 [US0.1b] Create `aspire/Muntada.ServiceDefaults/Extensions.cs` with `AddServiceDefaults()` and `MapDefaultEndpoints()` extension methods configuring: OpenTelemetry tracing + metrics, health check endpoints (`/health`, `/health/ready`, `/health/live`), HTTP client resilience (retry, circuit breaker, timeout), structured logging via Serilog
+- [x] T010 [US0.1b] Add Backend API project reference to AppHost `Program.cs` and wire service discovery (connection strings injected by Aspire, not hardcoded)
+- [x] T011 [US0.1b] Add Frontend SPA to AppHost as npm project or container resource with Vite dev server
+- [x] T012 [US0.1b] Write unit tests for `Extensions.cs` service registration in `backend/tests/Muntada.SharedKernel.Tests/Infrastructure/ServiceDefaultsTests.cs`
 
-**Acceptance:**
-- Each target completes successfully
-- `make setup` completes in < 10 minutes on standard machine
-- Help text is clear (`make help`)
+**Checkpoint**: `dotnet run --project aspire/Muntada.AppHost` starts all services. Dashboard shows healthy status.
 
 ---
 
-### T004: Setup README and Developer Onboarding [P]
-**User Story:** US-0.1
-**Priority:** P1
-**Effort:** 3 pts
-**Dependencies:** T001, T002, T003
+## Phase 3: Shared Kernel — Domain Layer
 
-Create comprehensive README with step-by-step setup instructions.
+**Purpose**: Core domain base classes that all modules depend on
+**User Story**: US-0.5
 
-**Deliverables:**
-- Project overview
-- Prerequisites (Docker, Make, Node, .NET SDK)
-- Quickstart: `git clone`, `make setup`
-- Service endpoints and URLs
-- Architecture diagram (ASCII or link to Figma)
-- CONTRIBUTING guide with branching strategy
-- Troubleshooting section
+**Independent Test**: `dotnet test backend/tests/Muntada.SharedKernel.Tests/` passes with 100% coverage on domain types
 
-**File Locations:**
-- `README.md` (project root)
-- `CONTRIBUTING.md` (project root)
+### Unit Tests (Write FIRST per Constitution IV)
 
-**Acceptance:**
-- New developer can set up in < 10 minutes
-- All prerequisites clearly listed
-- Common issues and solutions documented
+- [x] T013 [P] [US0.5] Write unit tests for `Entity<TId>` equality in `backend/tests/Muntada.SharedKernel.Tests/Domain/EntityTests.cs`
+- [x] T014 [P] [US0.5] Write unit tests for `AggregateRoot<TId>` (version increment, domain event tracking) in `backend/tests/Muntada.SharedKernel.Tests/Domain/AggregateRootTests.cs`
+- [x] T015 [P] [US0.5] Write unit tests for `ValueObject` equality in `backend/tests/Muntada.SharedKernel.Tests/Domain/ValueObjectTests.cs`
+- [x] T016 [P] [US0.5] Write unit tests for `OpaqueIdGenerator` (uniqueness, prefix validation, TryParse) in `backend/tests/Muntada.SharedKernel.Tests/Domain/OpaqueIdGeneratorTests.cs`
+- [x] T017 [P] [US0.5] Write unit tests for domain exceptions in `backend/tests/Muntada.SharedKernel.Tests/Domain/ExceptionTests.cs`
 
----
+### Implementation
 
-## Phase 2: Kubernetes & Core Infrastructure
+- [x] T018 [P] [US0.5] Create `Muntada.SharedKernel.csproj` at `backend/src/Muntada.SharedKernel/` with references to Aspire ServiceDefaults
+- [x] T019 [P] [US0.5] Implement `Entity<TId>` base class in `backend/src/Muntada.SharedKernel/Domain/Entity.cs` — XML docs on all public members
+- [x] T020 [P] [US0.5] Implement `ValueObject` abstract base class in `backend/src/Muntada.SharedKernel/Domain/ValueObject.cs` — XML docs on all public members
+- [x] T021 [US0.5] Implement `AggregateRoot<TId>` in `backend/src/Muntada.SharedKernel/Domain/AggregateRoot.cs` — inherits Entity, adds Version, CreatedAt, UpdatedAt, domain event tracking — XML docs
+- [x] T022 [US0.5] Implement `IDomainEvent` interface in `backend/src/Muntada.SharedKernel/Domain/IDomainEvent.cs` — EventId (Guid), OccurredAt (DateTimeOffset) — XML docs
+- [x] T023 [US0.5] Implement `OpaqueIdGenerator` static class in `backend/src/Muntada.SharedKernel/Domain/OpaqueIdGenerator.cs` — Generate(prefix), TryParse, URL-safe encoding via Sqids — XML docs
+- [x] T024 [US0.5] Implement `AuditedEntity<TId>` in `backend/src/Muntada.SharedKernel/Domain/AuditedEntity.cs` — inherits AggregateRoot, adds CreatedBy, UpdatedBy, IsDeleted, DeletedAt, DeletedBy — XML docs
+- [x] T025 [US0.5] Implement `AuditLog` entity in `backend/src/Muntada.SharedKernel/Domain/AuditLog.cs` — XML docs
+- [x] T026 [P] [US0.5] Implement `DomainException` base class in `backend/src/Muntada.SharedKernel/Domain/Exceptions/DomainException.cs` — XML docs
+- [x] T027 [P] [US0.5] Implement `ValidationException` in `backend/src/Muntada.SharedKernel/Domain/Exceptions/ValidationException.cs` — includes ValidationError list — XML docs
+- [x] T028 [P] [US0.5] Implement `EntityNotFoundException` in `backend/src/Muntada.SharedKernel/Domain/Exceptions/EntityNotFoundException.cs` — XML docs
+- [x] T029 [P] [US0.5] Implement `UnauthorizedException` in `backend/src/Muntada.SharedKernel/Domain/Exceptions/UnauthorizedException.cs` — XML docs
+- [x] T030 [US0.5] Verify all unit tests pass (`dotnet test backend/tests/Muntada.SharedKernel.Tests/`)
 
-### T005: Kubernetes Namespace Configuration [P]
-**User Story:** US-0.3
-**Priority:** P1
-**Effort:** 5 pts
-**Dependencies:** T001
-
-Set up Helm charts for namespace creation and RBAC.
-
-**Deliverables:**
-- Helm chart: `infra/helm/namespaces/`
-- RBAC roles and bindings (dev, admin, operator personas)
-- Network policies (deny-all default, explicit allow)
-- Namespace quotas (CPU, memory)
-- Helm values files for dev, staging, prod
-
-**File Locations:**
-- `infra/helm/namespaces/Chart.yaml`
-- `infra/helm/namespaces/templates/namespace.yaml`
-- `infra/helm/namespaces/templates/rbac.yaml`
-- `infra/helm/namespaces/templates/network-policy.yaml`
-- `infra/helm/namespaces/values-dev.yaml`
-- `infra/helm/namespaces/values-staging.yaml`
-- `infra/helm/namespaces/values-prod.yaml`
-
-**Acceptance:**
-- `helm install` creates 3 namespaces
-- Network policies isolate traffic
-- RBAC prevents unauthorized access
-- Quotas are enforced
+**Checkpoint**: All domain base classes compile, fully tested, XML documented.
 
 ---
 
-### T006: SQL Server Helm Chart [P]
-**User Story:** US-0.4
-**Priority:** P1
-**Effort:** 8 pts
-**Dependencies:** T005
+## Phase 4: Shared Kernel — Application & Infrastructure Layer
 
-Create Helm chart for SQL Server with persistent volumes and initialization scripts.
+**Purpose**: Integration event publishing, error handling middleware, validation, telemetry
+**User Story**: US-0.5
 
-**Deliverables:**
-- Helm chart: `infra/helm/sql-server/`
-- StatefulSet configuration
-- PVC for data persistence
-- ConfigMap for connection strings
-- Secrets for admin password
-- Database initialization script
-- Helm values for each environment
+### Unit Tests (Write FIRST)
 
-**File Locations:**
-- `infra/helm/sql-server/Chart.yaml`
-- `infra/helm/sql-server/templates/statefulset.yaml`
-- `infra/helm/sql-server/templates/service.yaml`
-- `infra/helm/sql-server/templates/pvc.yaml`
-- `infra/helm/sql-server/templates/configmap.yaml`
-- `infra/helm/sql-server/templates/secret.yaml`
-- `infra/helm/sql-server/values-dev.yaml`
-- `infra/helm/sql-server/values-prod.yaml`
+- [x] T031 [P] [US0.5] Write unit tests for `ErrorHandlingMiddleware` in `backend/tests/Muntada.SharedKernel.Tests/Infrastructure/ErrorHandlingMiddlewareTests.cs`
+- [x] T032 [P] [US0.5] Write unit tests for `IntegrationEventPublisher` in `backend/tests/Muntada.SharedKernel.Tests/Infrastructure/IntegrationEventPublisherTests.cs`
+- [x] T033 [P] [US0.5] Write unit tests for `ValidationBehavior` in `backend/tests/Muntada.SharedKernel.Tests/Application/ValidationBehaviorTests.cs`
 
-**Acceptance:**
-- SQL Server pod starts and is healthy
-- Database accepts connections
-- Data persists across pod restarts
-- Passwords stored in Secrets (not ConfigMap)
+### Implementation
+
+- [x] T034 [US0.5] Implement `IIntegrationEvent` interface in `backend/src/Muntada.SharedKernel/Domain/IIntegrationEvent.cs` — extends IDomainEvent with AggregateId, AggregateType, Version — XML docs
+- [x] T035 [US0.5] Implement `IIntegrationEventPublisher` interface in `backend/src/Muntada.SharedKernel/Application/IIntegrationEventPublisher.cs` — XML docs
+- [x] T036 [US0.5] Implement `IntegrationEventPublisher` (MassTransit/RabbitMQ) in `backend/src/Muntada.SharedKernel/Infrastructure/IntegrationEventPublisher.cs` — event routing, DLQ support — XML docs
+- [x] T037 [US0.5] Implement `ErrorHandlingMiddleware` in `backend/src/Muntada.SharedKernel/Infrastructure/Middleware/ErrorHandlingMiddleware.cs` — RFC 9457 Problem Details, exception-to-HTTP mapping, correlation ID — XML docs
+- [x] T038 [US0.5] Implement `ValidationBehavior<TRequest,TResponse>` MediatR pipeline in `backend/src/Muntada.SharedKernel/Application/Behaviors/ValidationBehavior.cs` — FluentValidation integration — XML docs
+- [x] T039 [US0.5] Implement `TelemetryConfiguration` in `backend/src/Muntada.SharedKernel/Infrastructure/Telemetry/TelemetryConfiguration.cs` — ActivitySource setup, OTLP export (Aspire Dashboard in dev, Jaeger in prod) — XML docs
+- [x] T040 [P] [US0.5] Implement `ActivitySourceExtensions` in `backend/src/Muntada.SharedKernel/Infrastructure/Telemetry/ActivitySourceExtensions.cs` — convenience methods for custom spans — XML docs
+- [x] T041 [P] [US0.5] Create `BaseTestFixture` in `backend/tests/Muntada.SharedKernel.Tests/BaseTestFixture.cs` — common test setup, mocking helpers
+- [x] T042 [P] [US0.5] Create `DomainAssertions` in `backend/tests/Muntada.SharedKernel.Tests/Assertions/DomainAssertions.cs` — custom FluentAssertions for domain objects
+- [x] T043 [US0.5] Verify all unit tests pass (`dotnet test backend/tests/Muntada.SharedKernel.Tests/`)
+
+**Checkpoint**: SharedKernel fully implemented and tested. All infrastructure patterns available for downstream modules.
 
 ---
 
-### T007: Redis Helm Chart with Sentinel [P]
-**User Story:** US-0.4
-**Priority:** P1
-**Effort:** 5 pts
-**Dependencies:** T005
+## Phase 5: Backend API Host & Health Checks
 
-Create Helm chart for Redis with HA setup via Sentinel.
+**Purpose**: ASP.NET Core host application with health check endpoints
+**User Story**: US-0.1, US-0.5
 
-**Deliverables:**
-- Helm chart: `infra/helm/redis/`
-- StatefulSet for Redis
-- StatefulSet for Sentinel
-- Services for primary and replicas
-- PVC for persistence
-- ConfigMap for Redis config
-- Helm values
+- [x] T044 Create `Muntada.Api.csproj` at `backend/src/Muntada.Api/` referencing SharedKernel and Aspire ServiceDefaults
+- [x] T045 Create `backend/src/Muntada.Api/Program.cs` — register middleware (ErrorHandling), MassTransit, FluentValidation, Serilog, ServiceDefaults
+- [x] T046 Implement health check endpoints (`/health`, `/health/ready`, `/health/live`) per contract in `backend/src/Muntada.Api/` using ASP.NET Core health checks + ServiceDefaults
+- [x] T047 Create `backend/src/Muntada.Api/appsettings.json` — base config (no secrets)
+- [x] T048 [P] Create `backend/src/Muntada.Api/appsettings.Development.json` — Aspire service discovery (no hardcoded connection strings)
+- [x] T049 [P] Create `backend/src/Muntada.Api/appsettings.Production.json` — K8s ConfigMap/Secret references
+- [x] T050 Write integration test for health check endpoints in `backend/tests/Muntada.Integration.Tests/HealthCheckTests.cs`
+- [x] T051 Verify backend starts via Aspire AppHost and health checks return 200
 
-**File Locations:**
-- `infra/helm/redis/Chart.yaml`
-- `infra/helm/redis/templates/statefulset.yaml`
-- `infra/helm/redis/templates/sentinel-statefulset.yaml`
-- `infra/helm/redis/templates/configmap.yaml`
-- `infra/helm/redis/values-dev.yaml`
-- `infra/helm/redis/values-prod.yaml`
-
-**Acceptance:**
-- Redis cluster operational
-- Sentinel monitors and failover works
-- Data persists
-- Can connect via DNS
+**Checkpoint**: Backend API running via Aspire, health endpoints operational, traces visible in Aspire Dashboard.
 
 ---
 
-### T008: RabbitMQ Helm Chart [P]
-**User Story:** US-0.4
-**Priority:** P1
-**Effort:** 5 pts
-**Dependencies:** T005
+## Phase 6: Frontend Scaffolding
 
-Create Helm chart for RabbitMQ cluster.
+**Purpose**: React/TypeScript SPA with Vite, Redux Toolkit + RTK Query, Playwright
+**User Story**: US-0.1
 
-**Deliverables:**
-- Helm chart: `infra/helm/rabbitmq/`
-- StatefulSet for RabbitMQ
-- Service for discovery
-- ConfigMap for config
-- Queue and exchange declarations (init job)
-- PVC for persistence
+- [x] T052 Initialize React + TypeScript project with Vite at `frontend/` — `npm create vite@latest`
+- [x] T053 Install and configure Redux Toolkit + RTK Query in `frontend/src/app/store.ts`
+- [x] T054 [P] Create base API slice with RTK Query in `frontend/src/shared/api/baseApi.ts` — base URL from env, typed endpoints
+- [x] T055 [P] Configure ESLint in `frontend/eslint.config.js` with TypeScript rules
+- [x] T056 [P] Configure Playwright in `frontend/playwright.config.ts` with `webServer` auto-start
+- [x] T057 [P] Create `frontend/src/App.tsx` shell component with router setup
+- [x] T058 [P] Create `frontend/src/main.tsx` entry point with Redux Provider
+- [x] T059 Write Playwright smoke test (frontend loads, connects to backend) in `frontend/tests/e2e/smoke.spec.ts`
+- [x] T060 [P] Create `frontend/Dockerfile` — multi-stage build (Node build → Nginx Alpine serve), target < 500MB
+- [x] T061 Verify frontend starts via Aspire AppHost and loads at `http://localhost:3000`
 
-**File Locations:**
-- `infra/helm/rabbitmq/Chart.yaml`
-- `infra/helm/rabbitmq/templates/statefulset.yaml`
-- `infra/helm/rabbitmq/templates/configmap.yaml`
-- `infra/helm/rabbitmq/templates/init-job.yaml`
-- `infra/helm/rabbitmq/values-dev.yaml`
-
-**Acceptance:**
-- RabbitMQ cluster stable
-- Queues and exchanges created
-- Can publish/consume messages
-- Management UI accessible
+**Checkpoint**: Frontend SPA running via Aspire, RTK Query configured, Playwright tests passing.
 
 ---
 
-### T009: MinIO Helm Chart [P]
-**User Story:** US-0.4
-**Priority:** P1
-**Effort:** 4 pts
-**Dependencies:** T005
+## Phase 7: Docker Compose Fallback & Makefile
 
-Create Helm chart for MinIO S3-compatible storage.
+**Purpose**: Fallback orchestration for environments without .NET SDK
+**User Story**: US-0.1
 
-**Deliverables:**
-- Helm chart: `infra/helm/minio/`
-- StatefulSet for MinIO
-- Service
-- PVC for storage
-- ConfigMap with access keys
-- Bucket provisioning job
+- [x] T062 Create `docker-compose.yml` with all services: SQL Server, Redis, RabbitMQ, MinIO, LiveKit, backend, frontend — health checks, named volumes, proper startup ordering
+- [x] T063 [P] Create `docker-compose.test.yml` for CI integration test execution
+- [x] T064 [P] Create `backend/Dockerfile` — multi-stage build (SDK build → runtime), target < 800MB
+- [x] T065 Create `Makefile` with targets: `setup` (Aspire primary), `aspire`, `up` (Docker Compose fallback), `down`, `clean`, `test`, `docker-build`, `logs`, `help`
+- [x] T066 Verify `make setup` completes in < 10 minutes and all services are healthy
 
-**File Locations:**
-- `infra/helm/minio/Chart.yaml`
-- `infra/helm/minio/templates/statefulset.yaml`
-- `infra/helm/minio/templates/provisioning-job.yaml`
-- `infra/helm/minio/values-dev.yaml`
-
-**Acceptance:**
-- MinIO operational
-- S3 API accessible
-- Buckets created
-- Can upload/download files
+**Checkpoint**: Docker Compose fallback works. Makefile provides all convenience targets.
 
 ---
 
-### T010: LiveKit Helm Chart [P]
-**User Story:** US-0.4
-**Priority:** P1
-**Effort:** 8 pts
-**Dependencies:** T005
+## Phase 8: Kubernetes & Helm Charts
 
-Create Helm chart for LiveKit cluster with 2+ replicas.
+**Purpose**: K8s namespace model, infrastructure Helm charts
+**User Stories**: US-0.3, US-0.4
 
-**Deliverables:**
-- Helm chart: `infra/helm/livekit/`
-- StatefulSet for LiveKit
-- Service
-- ConfigMap with API keys
-- Secrets for signing keys
-- PVC for recordings
-- Initialization job
+### Kubernetes Namespaces (US-0.3)
 
-**File Locations:**
-- `infra/helm/livekit/Chart.yaml`
-- `infra/helm/livekit/templates/statefulset.yaml`
-- `infra/helm/livekit/templates/configmap.yaml`
-- `infra/helm/livekit/templates/secret.yaml`
-- `infra/helm/livekit/values-dev.yaml`
-- `infra/helm/livekit/values-prod.yaml`
+- [x] T067 [US0.3] Create Helm chart `infra/helm/namespaces/` — Chart.yaml, templates for namespace, RBAC, network policies, quotas
+- [x] T068 [P] [US0.3] Create `infra/helm/namespaces/values-dev.yaml` — dev namespace config
+- [x] T069 [P] [US0.3] Create `infra/helm/namespaces/values-staging.yaml` — staging namespace config
+- [x] T070 [P] [US0.3] Create `infra/helm/namespaces/values-prod.yaml` — prod namespace config with stricter quotas
 
-**Acceptance:**
-- LiveKit API accessible
-- Webhooks configurable
-- Can create rooms and participants
-- 2+ replicas running in prod
+### Infrastructure Services (US-0.4)
+
+- [x] T071 [P] [US0.4] Create Helm chart `infra/helm/sql-server/` — StatefulSet, PVC, ConfigMap, Secret, init scripts, values per environment
+- [x] T072 [P] [US0.4] Create Helm chart `infra/helm/redis/` — StatefulSet with Sentinel, ConfigMap, values per environment
+- [x] T073 [P] [US0.4] Create Helm chart `infra/helm/rabbitmq/` — StatefulSet, queue/exchange init job, ConfigMap, values per environment
+- [x] T074 [P] [US0.4] Create Helm chart `infra/helm/minio/` — StatefulSet, bucket provisioning job, values per environment
+- [x] T075 [P] [US0.4] Create Helm chart `infra/helm/livekit/` — StatefulSet (self-hosted OSS), 2+ replicas in prod, API key/secret via Secret, values per environment
+- [x] T076 [US0.4] Create Helm chart `infra/helm/muntada/` — umbrella chart for backend + frontend Deployments, Services, Ingress, TLS via cert-manager
+
+**Checkpoint**: All Helm charts render cleanly (`helm template`). K8s namespaces created with RBAC and quotas.
 
 ---
 
-## CHECKPOINT: Core Infrastructure Operational
+## Phase 9: CI/CD Pipeline
 
-At this point, Kubernetes cluster should be fully provisioned with all stateful services running. Proceed to shared kernel.
+**Purpose**: GitHub Actions for lint, test, build, Docker Hub push, K8s deploy
+**User Story**: US-0.2
 
----
+- [x] T077 [US0.2] Create `.github/workflows/ci.yml` — PR trigger, matrix jobs: frontend lint (ESLint), frontend tests (Jest), backend lint (StyleCop), backend tests (xUnit), backend integration tests, Docker image build
+- [x] T078 [US0.2] Add Docker Hub push step to ci.yml — push on main merge, tag with git SHA + `latest`, uses `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets
+- [x] T079 [US0.2] Create `.github/workflows/deploy.yml` — manual trigger or main merge, Helm deploy to staging/prod K8s namespaces, rollout status tracking
+- [x] T080 [P] [US0.2] Add test coverage report generation and PR comment posting to ci.yml
+- [x] T081 [US0.2] Document rollback procedure in `docs/runbooks/rollback.md`
 
-## Phase 3: Shared Kernel & CI/CD
-
-### T011: SharedKernel NuGet Project Setup [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 3 pts
-**Dependencies:** T001
-
-Create the SharedKernel NuGet project structure.
-
-**Deliverables:**
-- `backend/src/SharedKernel/SharedKernel.csproj`
-- Base namespaces: `Muntada.SharedKernel.{Domain, Application, Infrastructure}`
-- Project file references common dependencies
-
-**File Locations:**
-- `backend/src/SharedKernel/SharedKernel.csproj`
-- `backend/src/SharedKernel/Domain/` (directory)
-- `backend/src/SharedKernel/Application/` (directory)
-- `backend/src/SharedKernel/Infrastructure/` (directory)
-
-**Acceptance:**
-- Project compiles
-- Can be referenced as NuGet package by other modules
-- No circular dependencies
+**Checkpoint**: CI pipeline validates PRs. CD pipeline pushes images to Docker Hub and deploys to K8s.
 
 ---
 
-### T012: AggregateRoot & Entity Base Classes [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 5 pts
-**Dependencies:** T011
+## Phase 10: Environment Configuration & Secrets
 
-Implement base classes for domain entities.
+**Purpose**: Environment-specific config management
+**User Story**: US-0.6
 
-**Deliverables:**
-- `AggregateRoot<TId>` base class
-- `Entity<TId>` base class
-- `ValueObject` base class
-- Version field for optimistic concurrency
-- Domain event tracking
+- [x] T082 [US0.6] Configure environment variable binding in backend (nested paths: `Database__ConnectionString`)
+- [x] T083 [P] [US0.6] Create Helm templates for ConfigMap and Secret mounting across all service charts
+- [x] T084 [P] [US0.6] Implement configuration validation on startup — fail fast if required settings missing
+- [x] T085 [US0.6] Document secret rotation procedure in `docs/runbooks/secret-rotation.md`
 
-**File Locations:**
-- `backend/src/SharedKernel/Domain/AggregateRoot.cs`
-- `backend/src/SharedKernel/Domain/Entity.cs`
-- `backend/src/SharedKernel/Domain/ValueObject.cs`
-- `backend/src/SharedKernel/Domain/IDomainEvent.cs`
-
-**Acceptance:**
-- Classes compile
-- Tests verify event tracking
-- Equality comparison works
-- Unit tests for version increment
+**Checkpoint**: Config loads per environment. Secrets not in version control. Fail-fast on missing config.
 
 ---
 
-### T013: OpaqueIdGenerator Implementation [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 5 pts
-**Dependencies:** T012
+## Phase 11: Documentation & Polish
 
-Implement opaque ID generation with prefix-based encoding.
+**Purpose**: Developer onboarding, architecture docs, runbooks
+**User Stories**: US-0.1, cross-cutting
 
-**Deliverables:**
-- `OpaqueIdGenerator` static class
-- ID format: `{prefix}_{base32-encoded-random}`
-- Validation and parsing logic
-- Example: `usr_a7k2jZ9xQpR4b1m`
+- [x] T086 Create `README.md` — project overview, prerequisites (.NET SDK 8+, Aspire 13.2, Docker, Node), quickstart (`dotnet run --project aspire/Muntada.AppHost`), service endpoints, architecture overview
+- [x] T087 [P] Create `CONTRIBUTING.md` — branching strategy, PR process, commit conventions, code review, Aspire module registration guide
+- [x] T088 [P] Create architecture diagrams in `docs/architecture/` — system context (C4), container diagram, module diagram, deployment diagram
+- [x] T089 [P] Create `docs/runbooks/local-dev-troubleshooting.md` — common issues with Aspire, Docker, connectivity
+- [x] T090 [P] Create `docs/runbooks/database-migration.md` — `dotnet ef migrations add` procedure (NEVER AI-generated)
+- [x] T091 Run full test suite: `dotnet test` (backend) + `npm test` (frontend) + Playwright E2E — all must pass
+- [x] T092 Final validation: `dotnet run --project aspire/Muntada.AppHost` starts everything, Aspire Dashboard shows all services healthy
 
-**File Locations:**
-- `backend/src/SharedKernel/Domain/OpaqueIdGenerator.cs`
-
-**Acceptance:**
-- Generated IDs are unique
-- Format matches spec
-- TryParse works correctly
-- Can extract prefix
+**Checkpoint**: Foundation complete. All tests pass. Documentation ready for onboarding.
 
 ---
 
-### T014: Integration Event Publishing [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 8 pts
-**Dependencies:** T011, T013
+## Dependencies & Execution Order
 
-Implement RabbitMQ-based integration event publishing.
+### Phase Dependencies
 
-**Deliverables:**
-- `IIntegrationEvent` interface
-- `IIntegrationEventPublisher` interface
-- RabbitMQ implementation
-- Event routing by type
-- Dead letter queue support
+```
+Phase 1 (Setup) ──────────> Phase 2 (Aspire) ──────> Phase 5 (API Host)
+                                    │                        │
+                                    ├──────> Phase 3 (Domain)│──> Phase 4 (Infra Layer)
+                                    │                               │
+                                    ├──────> Phase 6 (Frontend)     │
+                                    │                               │
+                                    └──────> Phase 7 (Docker/Make)  │
+                                                                    │
+Phase 8 (K8s/Helm) ────────────────────────────────────────────────┘
+Phase 9 (CI/CD) ── depends on: Phase 5, Phase 6, Phase 7
+Phase 10 (Config) ── depends on: Phase 5, Phase 8
+Phase 11 (Docs) ── depends on: ALL phases
+```
 
-**File Locations:**
-- `backend/src/SharedKernel/Domain/IIntegrationEvent.cs`
-- `backend/src/SharedKernel/Application/IIntegrationEventPublisher.cs`
-- `backend/src/SharedKernel/Infrastructure/IntegrationEventPublisher.cs`
+### Parallel Opportunities
 
-**Acceptance:**
-- Events published to RabbitMQ
-- Multiple subscribers can consume
-- Dead letter queue configured
-- No event loss on transient failures
-
----
-
-### T015: Domain Exception Hierarchy [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 3 pts
-**Dependencies:** T011
-
-Create domain exception base classes.
-
-**Deliverables:**
-- `DomainException` base class
-- `ValidationException` for invalid input
-- `EntityNotFoundException` for missing entities
-- `UnauthorizedException` for permission errors
-
-**File Locations:**
-- `backend/src/SharedKernel/Domain/Exceptions/DomainException.cs`
-- `backend/src/SharedKernel/Domain/Exceptions/ValidationException.cs`
-- `backend/src/SharedKernel/Domain/Exceptions/EntityNotFoundException.cs`
-- `backend/src/SharedKernel/Domain/Exceptions/UnauthorizedException.cs`
-
-**Acceptance:**
-- Exceptions compile
-- Can be caught and handled
-- Proper inheritance hierarchy
+- **Phase 1**: T002, T003, T004, T005 can run in parallel
+- **Phase 2**: T006, T008 can start in parallel; T007 depends on T006
+- **Phase 3**: All test tasks (T013-T017) in parallel; implementation tasks (T019, T020, T026-T029) in parallel where marked [P]
+- **Phase 4**: Test tasks (T031-T033) in parallel; T040-T042 in parallel
+- **Phase 6**: T054-T060 can mostly run in parallel
+- **Phase 8**: All Helm charts (T068-T075) in parallel
+- **Phase 9**: T080 in parallel with T077
 
 ---
 
-### T016: Error Handling Middleware [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 5 pts
-**Dependencies:** T015
+## Implementation Strategy
 
-Create ASP.NET Core middleware for translating exceptions to HTTP responses.
+### MVP First (Phases 1-5 Only)
 
-**Deliverables:**
-- `ErrorHandlingMiddleware` class
-- Exception → HTTP status code mapping
-- Structured error response format
-- Correlation ID tracking
+1. Complete Phase 1: Setup (directory structure)
+2. Complete Phase 2: Aspire AppHost (primary dev environment)
+3. Complete Phase 3: SharedKernel Domain (base types + tests)
+4. Complete Phase 4: SharedKernel Infrastructure (middleware, events, telemetry)
+5. Complete Phase 5: Backend API Host (health checks)
+6. **STOP and VALIDATE**: Backend runs via Aspire, all tests pass, health checks work
 
-**File Locations:**
-- `backend/src/SharedKernel/Infrastructure/Middleware/ErrorHandlingMiddleware.cs`
+### Incremental Delivery
 
-**Acceptance:**
-- Middleware catches exceptions
-- Returns appropriate HTTP status codes
-- Error responses are JSON
-- Correlation IDs are included
+7. Phase 6: Frontend scaffolding → frontend connects to backend via Aspire
+8. Phase 7: Docker Compose fallback + Makefile
+9. Phase 8: Kubernetes Helm charts
+10. Phase 9: CI/CD pipeline with Docker Hub
+11. Phase 10: Environment configuration
+12. Phase 11: Documentation and polish
 
 ---
 
-### T017: AuditedEntity & Audit Logging [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 5 pts
-**Dependencies:** T012
-
-Implement audited entity tracking.
-
-**Deliverables:**
-- `AuditedEntity<TId>` base class
-- `CreatedAt`, `UpdatedAt`, `CreatedBy` fields
-- `AuditLog` entity for tracking changes
-
-**File Locations:**
-- `backend/src/SharedKernel/Domain/AuditedEntity.cs`
-- `backend/src/SharedKernel/Domain/AuditLog.cs`
-
-**Acceptance:**
-- Audit fields populated automatically
-- Changes tracked in database
-- Audit logs searchable
-
----
-
-### T018: OpenTelemetry Configuration [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 8 pts
-**Dependencies:** T011
-
-Configure OpenTelemetry for distributed tracing.
-
-**Deliverables:**
-- ActivitySource setup
-- Instruments for metrics
-- Jaeger exporter configuration
-- HTTP middleware instrumentation
-- Database query instrumentation
-
-**File Locations:**
-- `backend/src/SharedKernel/Infrastructure/Telemetry/TelemetryConfiguration.cs`
-- `backend/src/SharedKernel/Infrastructure/Telemetry/ActivitySourceExtensions.cs`
-
-**Acceptance:**
-- Traces exported to Jaeger
-- HTTP requests traced
-- Database queries visible
-- Span propagation across services
-
----
-
-### T019: Fluent Validation Integration [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 3 pts
-**Dependencies:** T011, T016
-
-Integrate FluentValidation for input validation.
-
-**Deliverables:**
-- `AbstractValidator<T>` setup
-- Global validation pipeline
-- Custom validators for common patterns
-
-**File Locations:**
-- `backend/src/SharedKernel/Infrastructure/Validation/ValidationBehavior.cs`
-
-**Acceptance:**
-- Validators compile
-- Invalid input rejected
-- Validation errors included in 400 responses
-
----
-
-### T020: Unit Test Helpers & Assertions [P]
-**User Story:** US-0.5
-**Priority:** P1
-**Effort:** 3 pts
-**Dependencies:** T011
-
-Create test helpers for common testing scenarios.
-
-**Deliverables:**
-- Base test class with common setup
-- Custom assertions for domain objects
-- Mocking helpers for dependencies
-
-**File Locations:**
-- `backend/src/SharedKernel.Tests/BaseTestFixture.cs`
-- `backend/src/SharedKernel.Tests/Assertions/DomainAssertions.cs`
-
-**Acceptance:**
-- Test helpers compile
-- Simplify unit test writing
-- Documentation with examples
-
----
-
-## Phase 4: Configuration & CI/CD
-
-### T021: Environment Configuration Management [P]
-**User Story:** US-0.6
-**Priority:** P2
-**Effort:** 5 pts
-**Dependencies:** T002
-
-Configure appsettings files for all environments.
-
-**Deliverables:**
-- `backend/appsettings.json` (base)
-- `backend/appsettings.Development.json`
-- `backend/appsettings.Production.json`
-- Environment variable binding (nested paths)
-- `.env.local` support
-
-**File Locations:**
-- `backend/appsettings.json`
-- `backend/appsettings.Development.json`
-- `backend/appsettings.Production.json`
-- `.env.local.template`
-
-**Acceptance:**
-- Configuration loads correctly
-- Environment variables override settings
-- Secrets not in version control
-- Fail-fast on startup if required settings missing
-
----
-
-### T022: Kubernetes ConfigMap & Secrets Integration [P]
-**User Story:** US-0.6
-**Priority:** P2
-**Effort:** 5 pts
-**Dependencies:** T021, T005
-
-Set up Kubernetes ConfigMap and Secret mounting in Helm.
-
-**Deliverables:**
-- Helm templates for ConfigMap
-- Helm templates for Secrets
-- Volume mounts in deployment specs
-- Secret rotation support
-
-**File Locations:**
-- `infra/helm/*/templates/configmap.yaml`
-- `infra/helm/*/templates/secret.yaml`
-
-**Acceptance:**
-- ConfigMaps mounted as files or env vars
-- Secrets accessible to pods
-- Can be updated without redeployment
-- Secrets encrypted in etcd
-
----
-
-### T023: GitHub Actions CI Pipeline - Linting & Tests [P]
-**User Story:** US-0.2
-**Priority:** P1
-**Effort:** 8 pts
-**Dependencies:** T001, T003
-
-Create GitHub Actions workflow for linting and testing.
-
-**Deliverables:**
-- `.github/workflows/ci.yml`
-- Frontend linting (ESLint)
-- Frontend tests (Jest)
-- Backend linting (StyleCop)
-- Backend unit tests (xUnit)
-- Backend integration tests
-- Test coverage reports
-
-**File Locations:**
-- `.github/workflows/ci.yml`
-
-**Acceptance:**
-- Workflow runs on PR creation
-- All checks pass on valid code
-- Failing tests block merge
-- Coverage reports generated
-
----
-
-### T024: GitHub Actions CD Pipeline - Build & Push Images [P]
-**User Story:** US-0.2
-**Priority:** P1
-**Effort:** 8 pts
-**Dependencies:** T023
-
-Create GitHub Actions workflow for Docker image build and push.
-
-**Deliverables:**
-- Image build steps for backend (ASP.NET Core)
-- Image build steps for frontend (React)
-- Push to container registry
-- Tagging: git SHA + `latest`
-- Multi-stage builds for small images
-
-**File Locations:**
-- `.github/workflows/ci.yml` (extended)
-- `backend/Dockerfile`
-- `frontend/Dockerfile`
-
-**Acceptance:**
-- Images build successfully
-- Images pushed to registry
-- Frontend < 500MB, backend < 800MB
-- `latest` tag points to main branch
-
----
-
-### T025: GitHub Actions Deployment Pipeline - Staging & Prod [P]
-**User Story:** US-0.2
-**Priority:** P1
-**Effort:** 8 pts
-**Dependencies:** T024, T005
-
-Create GitHub Actions workflow for Kubernetes deployment.
-
-**Deliverables:**
-- `.github/workflows/deploy.yml`
-- Helm chart deployment for staging
-- Helm chart deployment for production
-- Rollout status checking
-- Rollback documentation
-
-**File Locations:**
-- `.github/workflows/deploy.yml`
-- Deployment instructions in docs
-
-**Acceptance:**
-- Manual trigger or automatic on main merge
-- Pods roll out successfully
-- Health checks pass
-- Previous release documented for rollback
-
----
-
-### T026: Docker Compose for Integration Tests [P]
-**User Story:** US-0.2
-**Priority:** P2
-**Effort:** 3 pts
-**Dependencies:** T002, T023
-
-Ensure Docker Compose supports integration test execution.
-
-**Deliverables:**
-- `docker-compose.test.yml` (optional, or use main)
-- Services start before tests run
-- Database migrations run automatically
-
-**File Locations:**
-- `docker-compose.test.yml` or shared config
-
-**Acceptance:**
-- Integration tests can run locally
-- CI pipeline uses same setup
-- Tests pass consistently
-
----
-
-### T027: Health Check Endpoints [P]
-**User Story:** US-0.4
-**Priority:** P1
-**Effort:** 3 pts
-**Dependencies:** T016
-
-Implement health check endpoints for Kubernetes probes.
-
-**Deliverables:**
-- `GET /health` - overall health
-- `GET /health/ready` - readiness probe
-- `GET /health/live` - liveness probe
-- Each service checks dependencies
-
-**File Locations:**
-- `backend/src/SharedKernel/Api/HealthCheckController.cs`
-
-**Acceptance:**
-- Endpoints respond with 200 OK
-- Kubernetes probes configured
-- Liveness: false if severe error
-- Readiness: false if dependencies unavailable
-
----
-
-### T028: Documentation: Architecture Diagrams [P]
-**User Story:** US-0.1
-**Priority:** P2
-**Effort:** 3 pts
-**Dependencies:** T001, T005
-
-Create architecture diagrams (C4 model or ASCII).
-
-**Deliverables:**
-- System context diagram (Muntada + external services)
-- Container diagram (backend, frontend, Kubernetes)
-- Component diagram (modules within backend)
-- Deployment diagram (Kubernetes, RabbitMQ, etc.)
-
-**File Locations:**
-- `docs/architecture/` (diagrams as PNG or Markdown)
-
-**Acceptance:**
-- Diagrams are clear and accurate
-- Easy for new developers to understand
-- Linkable from README
-
----
-
-### T029: Documentation: Runbooks [P]
-**User Story:** US-0.1
-**Priority:** P2
-**Effort:** 5 pts
-**Dependencies:** T005, T024
-
-Create operational runbooks for common tasks.
-
-**Deliverables:**
-- Local development troubleshooting
-- Kubernetes troubleshooting
-- Database migration guide
-- Backup and recovery procedures
-- Scaling procedures
-
-**File Locations:**
-- `docs/runbooks/` (one file per topic)
-
-**Acceptance:**
-- Clear step-by-step instructions
-- Common issues and solutions
-- Contact points for escalation
-
----
-
-## CHECKPOINT: Foundation Complete
-
-All infrastructure, CI/CD, and shared kernel are operational. Ready for dependent modules to start.
-
----
-
-## Success Metrics
-
-- Developer can clone repo and run `make setup` in < 10 minutes
-- All CI/CD checks pass on every PR
-- Kubernetes cluster fully provisioned with all services healthy
-- All 100% of developers use shared kernel base classes
-- OpenTelemetry traces visible in Jaeger for all requests
-- Docker images < 500MB (frontend), < 800MB (backend)
-- Health checks pass within 30 seconds of startup
+## Git & PR Workflow (per Constitution)
+
+- **GitHub Issues**: Create a GitHub issue for each task before implementation begins. Close it upon completion.
+- **Commit after each task** — one Git commit per completed task, not batched.
+- **All unit tests MUST pass** before each commit.
+- **PR per Phase**: Create a Pull Request at the end of each phase with a detailed summary of all changes.
+- **Code Review**: Run code review before submitting any PR. Fix all findings first.
+- **Phase Summary**: Include a detailed summary of all implemented tasks when the phase is completed.
+- **Database Migrations**: NEVER generate migrations via AI — use `dotnet ef migrations add` only.
+- **Aspire AppHost**: Every new module MUST register itself in the Aspire AppHost project. Local dev runs via `dotnet run --project AppHost`.

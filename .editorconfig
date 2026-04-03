@@ -1,0 +1,56 @@
+# EditorConfig — https://editorconfig.org
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# C# files
+[*.cs]
+indent_size = 4
+dotnet_sort_system_directives_first = true
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_indent_case_contents = true
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_prefer_braces = true:warning
+
+# XML documentation required for public APIs (Constitution VIII)
+dotnet_diagnostic.CS1591.severity = warning
+
+# TypeScript / JavaScript
+[*.{ts,tsx,js,jsx}]
+indent_size = 2
+
+# JSON
+[*.json]
+indent_size = 2
+
+# YAML / Helm
+[*.{yml,yaml}]
+indent_size = 2
+
+# Markdown
+[*.md]
+trim_trailing_whitespace = false
+
+# Solution files
+[*.sln]
+indent_style = tab
+
+# Project files
+[*.{csproj,props,targets}]
+indent_size = 2
+
+# Dockerfiles
+[Dockerfile*]
+indent_size = 4

@@ -1,0 +1,68 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+packages/
+*.nupkg
+*.snupkg
+project.lock.json
+*.nuget.props
+*.nuget.targets
+*.log
+
+# Node.js / Frontend
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.vite/
+coverage/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+docker-compose.override.yml
+
+# Kubernetes secrets (never commit)
+*.secret.yaml
+secrets/
+kubeconfig*
+*.key
+*.crt
+*.pem
+
+# Terraform
+.terraform/
+*.tfstate*
+*.tfvars
+
+# Helm
+infra/helm/*/charts/
+
+# Test results
+TestResults/
+*.trx
+playwright-report/
+test-results/
+
+# Aspire
+.aspire/
