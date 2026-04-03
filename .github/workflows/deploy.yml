@@ -43,8 +43,9 @@ jobs:
         run: |
           helm upgrade --install muntada infra/helm/muntada/ \
             --namespace ${{ steps.ns.outputs.namespace }} \
-            --values infra/helm/muntada/values-${{ github.event.inputs.environment }}.yaml \
-            --set image.tag=${{ github.sha }} \
+            --values infra/helm/muntada/values.yaml \
+            --set api.image.tag=${{ github.sha }} \
+            --set frontend.image.tag=${{ github.sha }} \
             --wait --timeout 5m
 
       - name: Verify rollout

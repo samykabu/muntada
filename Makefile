@@ -2,7 +2,7 @@
 
 ## Primary local dev — uses Aspire (Constitution XII)
 setup: ## Full setup: restore dependencies + start Aspire
-	dotnet restore backend/Muntada.slnx
+	dotnet restore aspire/Muntada.AppHost
 	cd frontend && npm ci
 	dotnet run --project aspire/Muntada.AppHost
 

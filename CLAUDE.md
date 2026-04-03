@@ -11,8 +11,10 @@ Auto-generated from all feature plans. Last updated: 2026-04-03
 ## Project Structure
 
 ```text
-src/
-tests/
+aspire/    # .NET Aspire app host and local orchestration
+backend/   # ASP.NET Core services, domain logic, and data access
+frontend/  # React/Vite web application
+infra/     # Helm charts, Kubernetes manifests, and environment config
 ```
 
 ## Commands

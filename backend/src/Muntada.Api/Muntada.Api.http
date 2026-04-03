@@ -7,7 +7,7 @@ Accept: application/json
 ###
 #endif
 
-GET {{Muntada.Api_HostAddress}}/weatherforecast/
+GET {{Muntada.Api_HostAddress}}/
 Accept: application/json
 
 ###
