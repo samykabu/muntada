@@ -1,2 +1,13 @@
 <Solution>
+  <Folder Name="/aspire/">
+    <Project Path="../aspire/Muntada.AppHost/Muntada.AppHost.csproj" />
+    <Project Path="../aspire/Muntada.ServiceDefaults/Muntada.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Muntada.Api/Muntada.Api.csproj" />
+    <Project Path="src/Muntada.SharedKernel/Muntada.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Muntada.SharedKernel.Tests/Muntada.SharedKernel.Tests.csproj" />
+  </Folder>
 </Solution>

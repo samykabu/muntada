@@ -12,7 +12,7 @@ Application configuration supports hot-reload via IOptionsMonitor.
 NEW_PASSWORD=$(openssl rand -base64 32)
 
 # 2. Update Kubernetes Secret
-kubectl create secret generic sql-server-secret \
+kubectl create secret generic muntada-sql-secret \
   --from-literal=sa-password="$NEW_PASSWORD" \
   --namespace muntada-prod \
   --dry-run=client -o yaml | kubectl apply -f -
@@ -22,7 +22,7 @@ kubectl rollout restart deployment/muntada-api -n muntada-prod
 
 # 4. Verify connectivity
 kubectl exec -it deployment/muntada-api -n muntada-prod -- \
-  curl -s http://localhost:5000/health/ready
+  curl -s http://localhost:8080/health/ready
 ```
 
 ## Rotating RabbitMQ Credentials

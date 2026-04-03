@@ -52,6 +52,14 @@ public sealed class ErrorHandlingMiddleware
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
+        if (context.Response.HasStarted)
+        {
+            _logger.LogWarning(
+                "Response already started, cannot write error response. Exception: {ExceptionType}",
+                exception.GetType().Name);
+            throw exception;
+        }
+
         var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
 
         var problemDetails = exception switch

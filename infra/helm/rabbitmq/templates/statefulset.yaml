@@ -25,8 +25,21 @@ spec:
             - containerPort: 15672
               name: management
           env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-rabbitmq-secret
+                  key: rabbitmq-username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-rabbitmq-secret
+                  key: rabbitmq-password
             - name: RABBITMQ_ERLANG_COOKIE
-              value: {{ .Values.erlangCookie | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-rabbitmq-secret
+                  key: rabbitmq-erlang-cookie
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}

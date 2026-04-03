@@ -1,13 +1,21 @@
-@Muntada.Api_HostAddress = http://localhost:5219
+@Muntada.Api_HostAddress = http://localhost:5000
 
-#if (EnableOpenAPI)
-GET {{Muntada.Api_HostAddress}}/openapi/v1.json
+GET {{Muntada.Api_HostAddress}}/
 Accept: application/json
 
 ###
-#endif
 
-GET {{Muntada.Api_HostAddress}}/
+GET {{Muntada.Api_HostAddress}}/health
+Accept: application/json
+
+###
+
+GET {{Muntada.Api_HostAddress}}/health/ready
+Accept: application/json
+
+###
+
+GET {{Muntada.Api_HostAddress}}/health/live
 Accept: application/json
 
 ###

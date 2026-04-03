@@ -4,7 +4,7 @@ api:
   replicas: 1
   port: 8080
   image:
-    repository: muntada/api
+    repository: samykabu/muntada-api
     tag: latest
   redis:
     connectionString: "muntada-redis:6379"
@@ -23,7 +23,7 @@ frontend:
   port: 3000
   apiBaseUrl: "/api"
   image:
-    repository: muntada/frontend
+    repository: samykabu/muntada-frontend
     tag: latest
   resources:
     requests:

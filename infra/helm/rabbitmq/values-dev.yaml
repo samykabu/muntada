@@ -8,8 +8,7 @@ auth:
   username: muntada
   password: dev-password
   vhost: muntada
-
-erlangCookie: dev-erlang-cookie
+  erlangCookie: dev-erlang-cookie
 
 diskFreeLimit: "1GB"
 memoryHighWatermark: "0.6"

@@ -5,8 +5,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   rabbitmq.conf: |
-    default_user = {{ .Values.auth.username }}
-    default_pass = {{ .Values.auth.password }}
     default_vhost = {{ .Values.auth.vhost }}
     disk_free_limit.absolute = {{ .Values.diskFreeLimit }}
     vm_memory_high_watermark.relative = {{ .Values.memoryHighWatermark }}

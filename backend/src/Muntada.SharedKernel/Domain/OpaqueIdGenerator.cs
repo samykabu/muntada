@@ -85,10 +85,6 @@ public static class OpaqueIdGenerator
             throw new ArgumentException("Prefix must contain only lowercase alphabetic characters.", nameof(prefix));
     }
 
-    private static int GenerateRandomInt()
-    {
-        Span<byte> buffer = stackalloc byte[4];
-        System.Security.Cryptography.RandomNumberGenerator.Fill(buffer);
-        return Math.Abs(BitConverter.ToInt32(buffer));
-    }
+    private static int GenerateRandomInt() =>
+        System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, int.MaxValue);
 }

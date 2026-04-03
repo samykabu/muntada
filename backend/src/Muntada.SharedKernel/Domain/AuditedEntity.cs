@@ -42,5 +42,6 @@ public abstract class AuditedEntity<TId> : AggregateRoot<TId>
         IsDeleted = true;
         DeletedAt = DateTimeOffset.UtcNow;
         DeletedBy = deletedBy;
+        IncrementVersion();
     }
 }
