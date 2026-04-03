@@ -109,15 +109,15 @@
 **Goal**: Users can register with email+password and verify their email.
 **Independent Test**: Register → receive verification email → click link → account Active.
 
-- [ ] T039 [P] [US1] Create `RegisterUserCommand` and `RegisterUserValidator` in `backend/src/Modules/Identity/Application/Commands/RegisterUserCommand.cs` — email, password, confirmPassword validation (12+ chars, complexity)
-- [ ] T040 [US1] Implement `RegisterUserCommandHandler` in `backend/src/Modules/Identity/Application/Commands/RegisterUserCommandHandler.cs` — validate, check duplicate email (generic error), bcrypt hash, create User (Unverified), publish UserRegisteredEvent
-- [ ] T041 [P] [US1] Create `EmailVerificationToken` command and handler in `backend/src/Modules/Identity/Application/Commands/GenerateEmailVerificationCommand.cs` — generate token, hash (SHA256), send email, 24hr expiry
-- [ ] T042 [US1] Create `VerifyEmailCommand` and handler in `backend/src/Modules/Identity/Application/Commands/VerifyEmailCommand.cs` — validate token, transition User to Active, publish UserEmailVerifiedEvent
-- [ ] T043 [P] [US1] Create `ResendVerificationCommand` in `backend/src/Modules/Identity/Application/Commands/ResendVerificationCommand.cs` — invalidate old token, generate new
-- [ ] T044 [US1] Create `AuthController` with POST `/api/v1/identity/auth/register`, POST `/api/v1/identity/auth/verify-email`, POST `/api/v1/identity/auth/resend-verification` in `backend/src/Modules/Identity/Api/Controllers/AuthController.cs`
-- [ ] T045 [P] [US1] Create request/response DTOs in `backend/src/Modules/Identity/Api/Dtos/` — RegisterRequest, VerifyEmailRequest, ResendVerificationRequest
-- [ ] T046 [P] [US1] Write unit tests for RegisterUserCommandHandler in `backend/tests/Modules/Identity.Tests/Application/RegisterUserTests.cs`
-- [ ] T047 [US1] Verify all US1 tests pass
+- [x] T039 [P] [US1] Create `RegisterUserCommand` and `RegisterUserValidator` in `backend/src/Modules/Identity/Application/Commands/RegisterUserCommand.cs` — email, password, confirmPassword validation (12+ chars, complexity)
+- [x] T040 [US1] Implement `RegisterUserCommandHandler` in `backend/src/Modules/Identity/Application/Commands/RegisterUserCommandHandler.cs` — validate, check duplicate email (generic error), bcrypt hash, create User (Unverified), publish UserRegisteredEvent
+- [x] T041 [P] [US1] Create `EmailVerificationToken` command and handler in `backend/src/Modules/Identity/Application/Commands/GenerateEmailVerificationCommand.cs` — generate token, hash (SHA256), send email, 24hr expiry
+- [x] T042 [US1] Create `VerifyEmailCommand` and handler in `backend/src/Modules/Identity/Application/Commands/VerifyEmailCommand.cs` — validate token, transition User to Active, publish UserEmailVerifiedEvent
+- [x] T043 [P] [US1] Create `ResendVerificationCommand` in `backend/src/Modules/Identity/Application/Commands/ResendVerificationCommand.cs` — invalidate old token, generate new
+- [x] T044 [US1] Create `AuthController` with POST `/api/v1/identity/auth/register`, POST `/api/v1/identity/auth/verify-email`, POST `/api/v1/identity/auth/resend-verification` in `backend/src/Modules/Identity/Api/Controllers/AuthController.cs`
+- [x] T045 [P] [US1] Create request/response DTOs in `backend/src/Modules/Identity/Api/Dtos/` — RegisterRequest, VerifyEmailRequest, ResendVerificationRequest
+- [x] T046 [P] [US1] Write unit tests for RegisterUserCommandHandler in `backend/tests/Modules/Identity.Tests/Application/RegisterUserTests.cs`
+- [x] T047 [US1] Verify all US1 tests pass
 
 **Checkpoint**: Registration + email verification working end-to-end.
 

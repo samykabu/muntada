@@ -11,22 +11,24 @@ public sealed class DeviceInfo : ValueObject
     /// <summary>
     /// Gets the User-Agent string from the client.
     /// </summary>
-    public string UserAgent { get; }
+    public string UserAgent { get; private set; } = null!;
 
     /// <summary>
     /// Gets the IP address of the client.
     /// </summary>
-    public string IpAddress { get; }
+    public string IpAddress { get; private set; } = null!;
 
     /// <summary>
     /// Gets the country code from GeoIP lookup (optional).
     /// </summary>
-    public string? Country { get; }
+    public string? Country { get; private set; }
 
     /// <summary>
     /// Gets the timestamp when device info was captured.
     /// </summary>
-    public DateTimeOffset DetectedAt { get; }
+    public DateTimeOffset DetectedAt { get; private set; }
+
+    private DeviceInfo() { } // EF Core
 
     /// <summary>
     /// Creates a new <see cref="DeviceInfo"/> instance.
