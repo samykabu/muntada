@@ -137,16 +137,16 @@
 **Purpose**: React/TypeScript SPA with Vite, Redux Toolkit + RTK Query, Playwright
 **User Story**: US-0.1
 
-- [ ] T052 Initialize React + TypeScript project with Vite at `frontend/` — `npm create vite@latest`
-- [ ] T053 Install and configure Redux Toolkit + RTK Query in `frontend/src/app/store.ts`
-- [ ] T054 [P] Create base API slice with RTK Query in `frontend/src/shared/api/baseApi.ts` — base URL from env, typed endpoints
-- [ ] T055 [P] Configure ESLint in `frontend/eslint.config.js` with TypeScript rules
-- [ ] T056 [P] Configure Playwright in `frontend/playwright.config.ts` with `webServer` auto-start
-- [ ] T057 [P] Create `frontend/src/App.tsx` shell component with router setup
-- [ ] T058 [P] Create `frontend/src/main.tsx` entry point with Redux Provider
-- [ ] T059 Write Playwright smoke test (frontend loads, connects to backend) in `frontend/tests/e2e/smoke.spec.ts`
-- [ ] T060 [P] Create `frontend/Dockerfile` — multi-stage build (Node build → Nginx Alpine serve), target < 500MB
-- [ ] T061 Verify frontend starts via Aspire AppHost and loads at `http://localhost:3000`
+- [x] T052 Initialize React + TypeScript project with Vite at `frontend/` — `npm create vite@latest`
+- [x] T053 Install and configure Redux Toolkit + RTK Query in `frontend/src/app/store.ts`
+- [x] T054 [P] Create base API slice with RTK Query in `frontend/src/shared/api/baseApi.ts` — base URL from env, typed endpoints
+- [x] T055 [P] Configure ESLint in `frontend/eslint.config.js` with TypeScript rules
+- [x] T056 [P] Configure Playwright in `frontend/playwright.config.ts` with `webServer` auto-start
+- [x] T057 [P] Create `frontend/src/App.tsx` shell component with router setup
+- [x] T058 [P] Create `frontend/src/main.tsx` entry point with Redux Provider
+- [x] T059 Write Playwright smoke test (frontend loads, connects to backend) in `frontend/tests/e2e/smoke.spec.ts`
+- [x] T060 [P] Create `frontend/Dockerfile` — multi-stage build (Node build → Nginx Alpine serve), target < 500MB
+- [x] T061 Verify frontend starts via Aspire AppHost and loads at `http://localhost:3000`
 
 **Checkpoint**: Frontend SPA running via Aspire, RTK Query configured, Playwright tests passing.
 
