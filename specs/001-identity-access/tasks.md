@@ -78,27 +78,27 @@
 
 ### Service Interfaces
 
-- [ ] T027 [P] Create `ITokenService` interface in `backend/src/Modules/Identity/Application/Services/ITokenService.cs` — GenerateAccessToken, GenerateRefreshToken, ValidateAccessToken, XML docs
-- [ ] T028 [P] Create `IEmailService` interface in `backend/src/Modules/Identity/Application/Services/IEmailService.cs` — SendVerificationEmail, SendPasswordResetEmail, XML docs
-- [ ] T029 [P] Create `ISmsService` interface in `backend/src/Modules/Identity/Application/Services/ISmsService.cs` — SendOtpCode, XML docs
+- [x] T027 [P] Create `ITokenService` interface in `backend/src/Modules/Identity/Application/Services/ITokenService.cs` — GenerateAccessToken, GenerateRefreshToken, ValidateAccessToken, XML docs
+- [x] T028 [P] Create `IEmailService` interface in `backend/src/Modules/Identity/Application/Services/IEmailService.cs` — SendVerificationEmail, SendPasswordResetEmail, XML docs
+- [x] T029 [P] Create `ISmsService` interface in `backend/src/Modules/Identity/Application/Services/ISmsService.cs` — SendOtpCode, XML docs
 
 ### Infrastructure Implementations
 
-- [ ] T030 Implement `JwtTokenService` in `backend/src/Modules/Identity/Infrastructure/Services/JwtTokenService.cs` — RS256 signing with kid, configurable expiry, claim mapping (sub, aud, scope), XML docs
-- [ ] T031 [P] Implement `SmtpEmailService` in `backend/src/Modules/Identity/Infrastructure/Services/SmtpEmailService.cs` — template-based email sending, XML docs
-- [ ] T032 [P] Implement `SmsGatewayService` in `backend/src/Modules/Identity/Infrastructure/Services/SmsGatewayService.cs` — abstract SMS sending with retry (3x exponential backoff), XML docs
-- [ ] T033 Implement `RateLimitingMiddleware` in `backend/src/Modules/Identity/Infrastructure/RateLimiting/RateLimitingMiddleware.cs` — Redis sliding window, configurable per-endpoint limits, XML docs
-- [ ] T034 [P] Implement `RateLimitPolicies` in `backend/src/Modules/Identity/Infrastructure/RateLimiting/RateLimitPolicies.cs` — login (5/15min), OTP (3/challenge), reset (3/hr/email), magic-link (10/day/room)
+- [x] T030 Implement `JwtTokenService` in `backend/src/Modules/Identity/Infrastructure/Services/JwtTokenService.cs` — RS256 signing with kid, configurable expiry, claim mapping (sub, aud, scope), XML docs
+- [x] T031 [P] Implement `SmtpEmailService` in `backend/src/Modules/Identity/Infrastructure/Services/SmtpEmailService.cs` — template-based email sending, XML docs
+- [x] T032 [P] Implement `SmsGatewayService` in `backend/src/Modules/Identity/Infrastructure/Services/SmsGatewayService.cs` — abstract SMS sending with retry (3x exponential backoff), XML docs
+- [x] T033 Implement `RateLimitingMiddleware` in `backend/src/Modules/Identity/Infrastructure/RateLimiting/RateLimitingMiddleware.cs` — Redis sliding window, configurable per-endpoint limits, XML docs
+- [x] T034 [P] Implement `RateLimitPolicies` in `backend/src/Modules/Identity/Infrastructure/RateLimiting/RateLimitPolicies.cs` — login (5/15min), OTP (3/challenge), reset (3/hr/email), magic-link (10/day/room)
 
 ### EF Core Configuration
 
-- [ ] T035 Configure EF Core entity mappings in `backend/src/Modules/Identity/Infrastructure/IdentityDbContext.cs` — all entities with [identity] schema, indexes on Email (unique), PhoneNumber, TokenHash columns
+- [x] T035 Configure EF Core entity mappings in `backend/src/Modules/Identity/Infrastructure/IdentityDbContext.cs` — all entities with [identity] schema, indexes on Email (unique), PhoneNumber, TokenHash columns
 
 ### Unit Tests for Infrastructure
 
-- [ ] T036 [P] Write unit tests for `JwtTokenService` in `backend/tests/Modules/Identity.Tests/Infrastructure/JwtTokenServiceTests.cs`
-- [ ] T037 [P] Write unit tests for `RateLimitingMiddleware` in `backend/tests/Modules/Identity.Tests/Infrastructure/RateLimitingTests.cs`
-- [ ] T038 Verify all tests pass: `dotnet test backend/tests/Modules/Identity.Tests/`
+- [x] T036 [P] Write unit tests for `JwtTokenService` in `backend/tests/Modules/Identity.Tests/Infrastructure/JwtTokenServiceTests.cs`
+- [x] T037 [P] Write unit tests for `RateLimitingMiddleware` in `backend/tests/Modules/Identity.Tests/Infrastructure/RateLimitingTests.cs`
+- [x] T038 Verify all tests pass: `dotnet test backend/tests/Modules/Identity.Tests/`
 
 **Checkpoint**: All service interfaces defined, JWT/rate-limiting implemented and tested.
 
