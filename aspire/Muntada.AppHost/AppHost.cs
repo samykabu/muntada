@@ -22,6 +22,23 @@ var rabbitmq = builder.AddRabbitMQ("messaging")
     .WithManagementPlugin()
     .WithLifetime(ContainerLifetime.Persistent);
 
+// MinIO — S3-compatible object storage for recordings, files, artifacts
+var minio = builder.AddContainer("minio", "minio/minio", "latest")
+    .WithArgs("server", "/data", "--console-address", ":9001")
+    .WithEnvironment("MINIO_ROOT_USER", "minioadmin")
+    .WithEnvironment("MINIO_ROOT_PASSWORD", "minioadmin")
+    .WithVolume("muntada-minio-data", "/data")
+    .WithHttpEndpoint(port: 9000, targetPort: 9000, name: "s3")
+    .WithHttpEndpoint(port: 9001, targetPort: 9001, name: "console")
+    .WithLifetime(ContainerLifetime.Persistent);
+
+// LiveKit — self-hosted OSS media server (Constitution: not SaaS, GCC data residency)
+var livekit = builder.AddContainer("livekit", "livekit/livekit-server", "latest")
+    .WithEnvironment("LIVEKIT_KEYS", "devkey: devsecret")
+    .WithHttpEndpoint(port: 7880, targetPort: 7880, name: "http")
+    .WithEndpoint(port: 7881, targetPort: 7881, name: "rtc-tcp", scheme: "tcp")
+    .WithLifetime(ContainerLifetime.Persistent);
+
 // =============================================================================
 // Application Services
 // =============================================================================
@@ -32,9 +49,13 @@ var api = builder.AddProject<Projects.Muntada_Api>("api")
     .WithReference(database)
     .WithReference(redis)
     .WithReference(rabbitmq)
+    .WithReference(minio.GetEndpoint("s3"))
+    .WithReference(livekit.GetEndpoint("http"))
     .WaitFor(sqlServer)
     .WaitFor(redis)
-    .WaitFor(rabbitmq);
+    .WaitFor(rabbitmq)
+    .WaitFor(minio)
+    .WaitFor(livekit);
 
 // Frontend SPA — Vite dev server with proxy to backend API
 // Uses Aspire.Hosting.JavaScript (Aspire 13.2+, replaces deprecated Aspire.Hosting.NodeJs)
