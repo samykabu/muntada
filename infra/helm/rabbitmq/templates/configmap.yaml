@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-rabbitmq-config
+  namespace: {{ .Release.Namespace }}
+data:
+  rabbitmq.conf: |
+    default_user = {{ .Values.auth.username }}
+    default_pass = {{ .Values.auth.password }}
+    default_vhost = {{ .Values.auth.vhost }}
+    disk_free_limit.absolute = {{ .Values.diskFreeLimit }}
+    vm_memory_high_watermark.relative = {{ .Values.memoryHighWatermark }}
+    management.tcp.port = 15672
+  enabled_plugins: |
+    [rabbitmq_management,rabbitmq_peer_discovery_k8s].

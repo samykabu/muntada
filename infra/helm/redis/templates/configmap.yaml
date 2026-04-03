@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-redis-config
+  namespace: {{ .Release.Namespace }}
+data:
+  redis.conf: |
+    maxmemory {{ .Values.maxMemory }}
+    maxmemory-policy {{ .Values.maxMemoryPolicy }}
+    appendonly {{ .Values.appendOnly }}
+    save 900 1
+    save 300 10
+    save 60 10000
+  {{- if .Values.sentinel.enabled }}
+  sentinel.conf: |
+    sentinel monitor mymaster {{ .Release.Name }}-redis-0.{{ .Release.Name }}-redis.{{ .Release.Namespace }}.svc.cluster.local 6379 {{ .Values.sentinel.quorum }}
+    sentinel down-after-milliseconds mymaster {{ .Values.sentinel.downAfterMs }}
+    sentinel failover-timeout mymaster {{ .Values.sentinel.failoverTimeoutMs }}
+    sentinel parallel-syncs mymaster 1
+  {{- end }}

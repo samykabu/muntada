@@ -1,0 +1,4 @@
+apiVersion: v2
+name: muntada-minio
+description: MinIO S3-compatible object storage for Muntada platform
+version: 0.1.0

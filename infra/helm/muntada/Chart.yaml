@@ -1,0 +1,4 @@
+apiVersion: v2
+name: muntada
+description: Umbrella Helm chart for the Muntada application (API + Frontend)
+version: 0.1.0

@@ -1,0 +1,43 @@
+environment: Development
+
+api:
+  replicas: 1
+  port: 8080
+  image:
+    repository: muntada/api
+    tag: latest
+  redis:
+    connectionString: "muntada-redis:6379"
+  rabbitmq:
+    host: "muntada-rabbitmq:5672"
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+
+frontend:
+  replicas: 1
+  port: 3000
+  apiBaseUrl: "/api"
+  image:
+    repository: muntada/frontend
+    tag: latest
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+
+ingress:
+  enabled: true
+  className: nginx
+  host: muntada.local
+  annotations: {}
+  tls:
+    enabled: false
+    clusterIssuer: letsencrypt-prod

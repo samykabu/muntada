@@ -1,0 +1,4 @@
+apiVersion: v2
+name: muntada-redis
+description: Redis with Sentinel support for Muntada platform
+version: 0.1.0

@@ -1,0 +1,22 @@
+replicas: 1
+
+image:
+  repository: livekit/livekit-server
+  tag: latest
+
+auth:
+  apiKey: devkey
+  apiSecret: dev-secret-change-me
+
+redis:
+  address: "muntada-redis:6379"
+
+logLevel: info
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "1"
+    memory: "1Gi"

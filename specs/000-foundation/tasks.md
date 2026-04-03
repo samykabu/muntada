@@ -60,27 +60,27 @@
 
 ### Unit Tests (Write FIRST per Constitution IV)
 
-- [ ] T013 [P] [US0.5] Write unit tests for `Entity<TId>` equality in `backend/tests/Muntada.SharedKernel.Tests/Domain/EntityTests.cs`
-- [ ] T014 [P] [US0.5] Write unit tests for `AggregateRoot<TId>` (version increment, domain event tracking) in `backend/tests/Muntada.SharedKernel.Tests/Domain/AggregateRootTests.cs`
-- [ ] T015 [P] [US0.5] Write unit tests for `ValueObject` equality in `backend/tests/Muntada.SharedKernel.Tests/Domain/ValueObjectTests.cs`
-- [ ] T016 [P] [US0.5] Write unit tests for `OpaqueIdGenerator` (uniqueness, prefix validation, TryParse) in `backend/tests/Muntada.SharedKernel.Tests/Domain/OpaqueIdGeneratorTests.cs`
-- [ ] T017 [P] [US0.5] Write unit tests for domain exceptions in `backend/tests/Muntada.SharedKernel.Tests/Domain/ExceptionTests.cs`
+- [x] T013 [P] [US0.5] Write unit tests for `Entity<TId>` equality in `backend/tests/Muntada.SharedKernel.Tests/Domain/EntityTests.cs`
+- [x] T014 [P] [US0.5] Write unit tests for `AggregateRoot<TId>` (version increment, domain event tracking) in `backend/tests/Muntada.SharedKernel.Tests/Domain/AggregateRootTests.cs`
+- [x] T015 [P] [US0.5] Write unit tests for `ValueObject` equality in `backend/tests/Muntada.SharedKernel.Tests/Domain/ValueObjectTests.cs`
+- [x] T016 [P] [US0.5] Write unit tests for `OpaqueIdGenerator` (uniqueness, prefix validation, TryParse) in `backend/tests/Muntada.SharedKernel.Tests/Domain/OpaqueIdGeneratorTests.cs`
+- [x] T017 [P] [US0.5] Write unit tests for domain exceptions in `backend/tests/Muntada.SharedKernel.Tests/Domain/ExceptionTests.cs`
 
 ### Implementation
 
-- [ ] T018 [P] [US0.5] Create `Muntada.SharedKernel.csproj` at `backend/src/Muntada.SharedKernel/` with references to Aspire ServiceDefaults
-- [ ] T019 [P] [US0.5] Implement `Entity<TId>` base class in `backend/src/Muntada.SharedKernel/Domain/Entity.cs` — XML docs on all public members
-- [ ] T020 [P] [US0.5] Implement `ValueObject` abstract base class in `backend/src/Muntada.SharedKernel/Domain/ValueObject.cs` — XML docs on all public members
-- [ ] T021 [US0.5] Implement `AggregateRoot<TId>` in `backend/src/Muntada.SharedKernel/Domain/AggregateRoot.cs` — inherits Entity, adds Version, CreatedAt, UpdatedAt, domain event tracking — XML docs
-- [ ] T022 [US0.5] Implement `IDomainEvent` interface in `backend/src/Muntada.SharedKernel/Domain/IDomainEvent.cs` — EventId (Guid), OccurredAt (DateTimeOffset) — XML docs
-- [ ] T023 [US0.5] Implement `OpaqueIdGenerator` static class in `backend/src/Muntada.SharedKernel/Domain/OpaqueIdGenerator.cs` — Generate(prefix), TryParse, URL-safe encoding via Sqids — XML docs
-- [ ] T024 [US0.5] Implement `AuditedEntity<TId>` in `backend/src/Muntada.SharedKernel/Domain/AuditedEntity.cs` — inherits AggregateRoot, adds CreatedBy, UpdatedBy, IsDeleted, DeletedAt, DeletedBy — XML docs
-- [ ] T025 [US0.5] Implement `AuditLog` entity in `backend/src/Muntada.SharedKernel/Domain/AuditLog.cs` — XML docs
-- [ ] T026 [P] [US0.5] Implement `DomainException` base class in `backend/src/Muntada.SharedKernel/Domain/Exceptions/DomainException.cs` — XML docs
-- [ ] T027 [P] [US0.5] Implement `ValidationException` in `backend/src/Muntada.SharedKernel/Domain/Exceptions/ValidationException.cs` — includes ValidationError list — XML docs
-- [ ] T028 [P] [US0.5] Implement `EntityNotFoundException` in `backend/src/Muntada.SharedKernel/Domain/Exceptions/EntityNotFoundException.cs` — XML docs
-- [ ] T029 [P] [US0.5] Implement `UnauthorizedException` in `backend/src/Muntada.SharedKernel/Domain/Exceptions/UnauthorizedException.cs` — XML docs
-- [ ] T030 [US0.5] Verify all unit tests pass (`dotnet test backend/tests/Muntada.SharedKernel.Tests/`)
+- [x] T018 [P] [US0.5] Create `Muntada.SharedKernel.csproj` at `backend/src/Muntada.SharedKernel/` with references to Aspire ServiceDefaults
+- [x] T019 [P] [US0.5] Implement `Entity<TId>` base class in `backend/src/Muntada.SharedKernel/Domain/Entity.cs` — XML docs on all public members
+- [x] T020 [P] [US0.5] Implement `ValueObject` abstract base class in `backend/src/Muntada.SharedKernel/Domain/ValueObject.cs` — XML docs on all public members
+- [x] T021 [US0.5] Implement `AggregateRoot<TId>` in `backend/src/Muntada.SharedKernel/Domain/AggregateRoot.cs` — inherits Entity, adds Version, CreatedAt, UpdatedAt, domain event tracking — XML docs
+- [x] T022 [US0.5] Implement `IDomainEvent` interface in `backend/src/Muntada.SharedKernel/Domain/IDomainEvent.cs` — EventId (Guid), OccurredAt (DateTimeOffset) — XML docs
+- [x] T023 [US0.5] Implement `OpaqueIdGenerator` static class in `backend/src/Muntada.SharedKernel/Domain/OpaqueIdGenerator.cs` — Generate(prefix), TryParse, URL-safe encoding via Sqids — XML docs
+- [x] T024 [US0.5] Implement `AuditedEntity<TId>` in `backend/src/Muntada.SharedKernel/Domain/AuditedEntity.cs` — inherits AggregateRoot, adds CreatedBy, UpdatedBy, IsDeleted, DeletedAt, DeletedBy — XML docs
+- [x] T025 [US0.5] Implement `AuditLog` entity in `backend/src/Muntada.SharedKernel/Domain/AuditLog.cs` — XML docs
+- [x] T026 [P] [US0.5] Implement `DomainException` base class in `backend/src/Muntada.SharedKernel/Domain/Exceptions/DomainException.cs` — XML docs
+- [x] T027 [P] [US0.5] Implement `ValidationException` in `backend/src/Muntada.SharedKernel/Domain/Exceptions/ValidationException.cs` — includes ValidationError list — XML docs
+- [x] T028 [P] [US0.5] Implement `EntityNotFoundException` in `backend/src/Muntada.SharedKernel/Domain/Exceptions/EntityNotFoundException.cs` — XML docs
+- [x] T029 [P] [US0.5] Implement `UnauthorizedException` in `backend/src/Muntada.SharedKernel/Domain/Exceptions/UnauthorizedException.cs` — XML docs
+- [x] T030 [US0.5] Verify all unit tests pass (`dotnet test backend/tests/Muntada.SharedKernel.Tests/`)
 
 **Checkpoint**: All domain base classes compile, fully tested, XML documented.
 
@@ -174,19 +174,19 @@
 
 ### Kubernetes Namespaces (US-0.3)
 
-- [ ] T067 [US0.3] Create Helm chart `infra/helm/namespaces/` — Chart.yaml, templates for namespace, RBAC, network policies, quotas
-- [ ] T068 [P] [US0.3] Create `infra/helm/namespaces/values-dev.yaml` — dev namespace config
-- [ ] T069 [P] [US0.3] Create `infra/helm/namespaces/values-staging.yaml` — staging namespace config
-- [ ] T070 [P] [US0.3] Create `infra/helm/namespaces/values-prod.yaml` — prod namespace config with stricter quotas
+- [x] T067 [US0.3] Create Helm chart `infra/helm/namespaces/` — Chart.yaml, templates for namespace, RBAC, network policies, quotas
+- [x] T068 [P] [US0.3] Create `infra/helm/namespaces/values-dev.yaml` — dev namespace config
+- [x] T069 [P] [US0.3] Create `infra/helm/namespaces/values-staging.yaml` — staging namespace config
+- [x] T070 [P] [US0.3] Create `infra/helm/namespaces/values-prod.yaml` — prod namespace config with stricter quotas
 
 ### Infrastructure Services (US-0.4)
 
-- [ ] T071 [P] [US0.4] Create Helm chart `infra/helm/sql-server/` — StatefulSet, PVC, ConfigMap, Secret, init scripts, values per environment
-- [ ] T072 [P] [US0.4] Create Helm chart `infra/helm/redis/` — StatefulSet with Sentinel, ConfigMap, values per environment
-- [ ] T073 [P] [US0.4] Create Helm chart `infra/helm/rabbitmq/` — StatefulSet, queue/exchange init job, ConfigMap, values per environment
-- [ ] T074 [P] [US0.4] Create Helm chart `infra/helm/minio/` — StatefulSet, bucket provisioning job, values per environment
-- [ ] T075 [P] [US0.4] Create Helm chart `infra/helm/livekit/` — StatefulSet (self-hosted OSS), 2+ replicas in prod, API key/secret via Secret, values per environment
-- [ ] T076 [US0.4] Create Helm chart `infra/helm/muntada/` — umbrella chart for backend + frontend Deployments, Services, Ingress, TLS via cert-manager
+- [x] T071 [P] [US0.4] Create Helm chart `infra/helm/sql-server/` — StatefulSet, PVC, ConfigMap, Secret, init scripts, values per environment
+- [x] T072 [P] [US0.4] Create Helm chart `infra/helm/redis/` — StatefulSet with Sentinel, ConfigMap, values per environment
+- [x] T073 [P] [US0.4] Create Helm chart `infra/helm/rabbitmq/` — StatefulSet, queue/exchange init job, ConfigMap, values per environment
+- [x] T074 [P] [US0.4] Create Helm chart `infra/helm/minio/` — StatefulSet, bucket provisioning job, values per environment
+- [x] T075 [P] [US0.4] Create Helm chart `infra/helm/livekit/` — StatefulSet (self-hosted OSS), 2+ replicas in prod, API key/secret via Secret, values per environment
+- [x] T076 [US0.4] Create Helm chart `infra/helm/muntada/` — umbrella chart for backend + frontend Deployments, Services, Ingress, TLS via cert-manager
 
 **Checkpoint**: All Helm charts render cleanly (`helm template`). K8s namespaces created with RBAC and quotas.
 
@@ -197,11 +197,11 @@
 **Purpose**: GitHub Actions for lint, test, build, Docker Hub push, K8s deploy
 **User Story**: US-0.2
 
-- [ ] T077 [US0.2] Create `.github/workflows/ci.yml` — PR trigger, matrix jobs: frontend lint (ESLint), frontend tests (Jest), backend lint (StyleCop), backend tests (xUnit), backend integration tests, Docker image build
-- [ ] T078 [US0.2] Add Docker Hub push step to ci.yml — push on main merge, tag with git SHA + `latest`, uses `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets
-- [ ] T079 [US0.2] Create `.github/workflows/deploy.yml` — manual trigger or main merge, Helm deploy to staging/prod K8s namespaces, rollout status tracking
-- [ ] T080 [P] [US0.2] Add test coverage report generation and PR comment posting to ci.yml
-- [ ] T081 [US0.2] Document rollback procedure in `docs/runbooks/rollback.md`
+- [x] T077 [US0.2] Create `.github/workflows/ci.yml` — PR trigger, matrix jobs: frontend lint (ESLint), frontend tests (Jest), backend lint (StyleCop), backend tests (xUnit), backend integration tests, Docker image build
+- [x] T078 [US0.2] Add Docker Hub push step to ci.yml — push on main merge, tag with git SHA + `latest`, uses `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets
+- [x] T079 [US0.2] Create `.github/workflows/deploy.yml` — manual trigger or main merge, Helm deploy to staging/prod K8s namespaces, rollout status tracking
+- [x] T080 [P] [US0.2] Add test coverage report generation and PR comment posting to ci.yml
+- [x] T081 [US0.2] Document rollback procedure in `docs/runbooks/rollback.md`
 
 **Checkpoint**: CI pipeline validates PRs. CD pipeline pushes images to Docker Hub and deploys to K8s.
 
@@ -212,10 +212,10 @@
 **Purpose**: Environment-specific config management
 **User Story**: US-0.6
 
-- [ ] T082 [US0.6] Configure environment variable binding in backend (nested paths: `Database__ConnectionString`)
-- [ ] T083 [P] [US0.6] Create Helm templates for ConfigMap and Secret mounting across all service charts
-- [ ] T084 [P] [US0.6] Implement configuration validation on startup — fail fast if required settings missing
-- [ ] T085 [US0.6] Document secret rotation procedure in `docs/runbooks/secret-rotation.md`
+- [x] T082 [US0.6] Configure environment variable binding in backend (nested paths: `Database__ConnectionString`)
+- [x] T083 [P] [US0.6] Create Helm templates for ConfigMap and Secret mounting across all service charts
+- [x] T084 [P] [US0.6] Implement configuration validation on startup — fail fast if required settings missing
+- [x] T085 [US0.6] Document secret rotation procedure in `docs/runbooks/secret-rotation.md`
 
 **Checkpoint**: Config loads per environment. Secrets not in version control. Fail-fast on missing config.
 
@@ -226,13 +226,13 @@
 **Purpose**: Developer onboarding, architecture docs, runbooks
 **User Stories**: US-0.1, cross-cutting
 
-- [ ] T086 Create `README.md` — project overview, prerequisites (.NET SDK 8+, Aspire 13.2, Docker, Node), quickstart (`dotnet run --project aspire/Muntada.AppHost`), service endpoints, architecture overview
-- [ ] T087 [P] Create `CONTRIBUTING.md` — branching strategy, PR process, commit conventions, code review, Aspire module registration guide
-- [ ] T088 [P] Create architecture diagrams in `docs/architecture/` — system context (C4), container diagram, module diagram, deployment diagram
-- [ ] T089 [P] Create `docs/runbooks/local-dev-troubleshooting.md` — common issues with Aspire, Docker, connectivity
-- [ ] T090 [P] Create `docs/runbooks/database-migration.md` — `dotnet ef migrations add` procedure (NEVER AI-generated)
-- [ ] T091 Run full test suite: `dotnet test` (backend) + `npm test` (frontend) + Playwright E2E — all must pass
-- [ ] T092 Final validation: `dotnet run --project aspire/Muntada.AppHost` starts everything, Aspire Dashboard shows all services healthy
+- [x] T086 Create `README.md` — project overview, prerequisites (.NET SDK 8+, Aspire 13.2, Docker, Node), quickstart (`dotnet run --project aspire/Muntada.AppHost`), service endpoints, architecture overview
+- [x] T087 [P] Create `CONTRIBUTING.md` — branching strategy, PR process, commit conventions, code review, Aspire module registration guide
+- [x] T088 [P] Create architecture diagrams in `docs/architecture/` — system context (C4), container diagram, module diagram, deployment diagram
+- [x] T089 [P] Create `docs/runbooks/local-dev-troubleshooting.md` — common issues with Aspire, Docker, connectivity
+- [x] T090 [P] Create `docs/runbooks/database-migration.md` — `dotnet ef migrations add` procedure (NEVER AI-generated)
+- [x] T091 Run full test suite: `dotnet test` (backend) + `npm test` (frontend) + Playwright E2E — all must pass
+- [x] T092 Final validation: `dotnet run --project aspire/Muntada.AppHost` starts everything, Aspire Dashboard shows all services healthy
 
 **Checkpoint**: Foundation complete. All tests pass. Documentation ready for onboarding.
 

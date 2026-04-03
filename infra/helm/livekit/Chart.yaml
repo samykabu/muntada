@@ -1,0 +1,4 @@
+apiVersion: v2
+name: muntada-livekit
+description: Self-hosted LiveKit OSS server for Muntada real-time communication
+version: 0.1.0

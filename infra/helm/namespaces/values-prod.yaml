@@ -1,0 +1,9 @@
+namespace: muntada-prod
+environment: prod
+
+quota:
+  requestsCpu: "32"
+  requestsMemory: "64Gi"
+  limitsCpu: "64"
+  limitsMemory: "128Gi"
+  pods: "200"
