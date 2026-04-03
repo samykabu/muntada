@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { LoginForm } from '../components/LoginForm';
 import { useAuth } from '../hooks/useAuth';
 
@@ -23,8 +23,8 @@ export function LoginPage() {
     <div style={{ maxWidth: 400, margin: '2rem auto', padding: '1rem' }}>
       <h1>Sign In</h1>
       <LoginForm onSubmit={handleSubmit} isLoading={isLoggingIn} error={error} onForgotPassword={() => navigate('/forgot-password')} />
-      <p>Don't have an account? <a href="/register">Create one</a></p>
-      <p><a href="/login/otp">Sign in with phone</a></p>
+      <p>Don't have an account? <Link to="/register">Create one</Link></p>
+      <p><Link to="/login/otp">Sign in with phone</Link></p>
     </div>
   );
 }

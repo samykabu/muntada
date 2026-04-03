@@ -37,7 +37,7 @@ public sealed class ExpiredOtpCleanupJob
 
         foreach (var challenge in expiredChallenges)
         {
-            challenge.IncrementFailedAttempts(); // Forces transition to Expired when at max
+            challenge.MarkExpired();
         }
 
         if (expiredChallenges.Count > 0)

@@ -74,15 +74,15 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, LoginRes
         var refreshTokenPlaintext = _tokenService.GenerateRefreshToken();
         var refreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshTokenPlaintext);
 
-        // Create refresh token entity
+        // Create refresh token entity (initially unbound)
         var refreshToken = RefreshToken.Create(Guid.Empty, refreshTokenHash, SessionLifetime);
 
         // Create device info and session
         var deviceInfo = new DeviceInfo(request.UserAgent, request.IpAddress);
         var session = Session.Create(user.Id, deviceInfo, refreshToken.Id, SessionLifetime);
 
-        // Bind the refresh token to the session (update SessionId now that we have it)
-        refreshToken = RefreshToken.Create(session.Id, refreshTokenHash, SessionLifetime);
+        // Bind the refresh token to the session
+        refreshToken.BindToSession(session.Id);
 
         // Generate JWT access token
         var accessToken = _tokenService.GenerateAccessToken(user.Id.ToString(), tenantId: null, scopes: []);
@@ -99,6 +99,6 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, LoginRes
         var @event = UserLoggedInEvent.Create(user.Id, session.Id);
         await _eventPublisher.PublishAsync(@event, cancellationToken);
 
-        return new LoginResult(accessToken, user.Id.ToString());
+        return new LoginResult(accessToken, refreshTokenPlaintext, user.Id.ToString());
     }
 }

@@ -45,6 +45,13 @@ public sealed class RefreshToken : Entity<Guid>
     /// <summary>Checks if the token is valid (active and not expired).</summary>
     public bool IsValid() => Status == RefreshTokenStatus.Active && DateTimeOffset.UtcNow < ExpiresAt;
 
+    /// <summary>Binds this refresh token to a session after creation.</summary>
+    /// <param name="sessionId">The session ID to bind to.</param>
+    public void BindToSession(Guid sessionId)
+    {
+        SessionId = sessionId;
+    }
+
     /// <summary>Revokes this refresh token.</summary>
     public void Revoke()
     {

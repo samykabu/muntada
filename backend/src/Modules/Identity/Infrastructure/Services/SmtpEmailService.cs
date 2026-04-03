@@ -25,7 +25,7 @@ public sealed class SmtpEmailService : IEmailService
     /// <inheritdoc />
     public async Task SendVerificationEmailAsync(string email, string verificationToken, CancellationToken cancellationToken = default)
     {
-        var link = $"{_baseUrl}/verify-email?token={verificationToken}";
+        var link = $"{_baseUrl}/verify-email?token={Uri.EscapeDataString(verificationToken)}";
         _logger.LogInformation("Sending verification email to {Email} with link {Link}", email, link);
 
         // TODO: Replace with actual SMTP/SendGrid implementation
@@ -36,7 +36,7 @@ public sealed class SmtpEmailService : IEmailService
     /// <inheritdoc />
     public async Task SendPasswordResetEmailAsync(string email, string resetToken, CancellationToken cancellationToken = default)
     {
-        var link = $"{_baseUrl}/reset-password?token={resetToken}";
+        var link = $"{_baseUrl}/reset-password?token={Uri.EscapeDataString(resetToken)}";
         _logger.LogInformation("Sending password reset email to {Email} with link {Link}", email, link);
 
         // TODO: Replace with actual SMTP/SendGrid implementation

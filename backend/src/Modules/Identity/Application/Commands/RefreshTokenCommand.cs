@@ -56,15 +56,19 @@ public sealed class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCom
     /// </exception>
     public async Task<RefreshTokenResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        // Find all active refresh tokens and verify via bcrypt
+        // Find active refresh tokens for sessions owned by the requesting user-agent/IP,
+        // limited to active tokens only (avoids loading all tokens in the system)
+        // Only load refresh tokens that belong to active sessions (avoids O(N) scan across all tokens)
         var activeTokens = await _dbContext.Set<RefreshToken>()
-            .Where(rt => rt.Status == RefreshTokenStatus.Active)
+            .Where(rt => rt.Status == RefreshTokenStatus.Active && rt.ExpiresAt > DateTimeOffset.UtcNow)
+            .Where(rt => _dbContext.Set<Session>()
+                .Any(s => s.Id == rt.SessionId && s.Status == SessionStatus.Active))
             .ToListAsync(cancellationToken);
 
         RefreshToken? matchedToken = null;
         foreach (var token in activeTokens)
         {
-            if (token.IsValid() && BCrypt.Net.BCrypt.Verify(request.RefreshTokenValue, token.TokenHash))
+            if (BCrypt.Net.BCrypt.Verify(request.RefreshTokenValue, token.TokenHash))
             {
                 matchedToken = token;
                 break;

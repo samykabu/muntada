@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useForgotPasswordMutation } from '../api/authApi';
 
 /** Forgot password page — requests a password reset email. */
@@ -9,7 +10,11 @@ export function ForgotPasswordPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await forgotPassword({ email });
+    try {
+      await forgotPassword({ email }).unwrap();
+    } catch {
+      // Generic response per FR-018 — always show success regardless of outcome
+    }
     setSent(true);
   };
 
@@ -18,7 +23,7 @@ export function ForgotPasswordPage() {
       <div style={{ maxWidth: 400, margin: '2rem auto', padding: '1rem' }}>
         <h1>Check Your Email</h1>
         <p>If an account exists for that email, we've sent a password reset link.</p>
-        <a href="/login">Back to Sign In</a>
+        <Link to="/login">Back to Sign In</Link>
       </div>
     );
   }
@@ -33,7 +38,7 @@ export function ForgotPasswordPage() {
         </div>
         <button type="submit" disabled={isLoading}>{isLoading ? 'Sending...' : 'Send Reset Link'}</button>
       </form>
-      <p><a href="/login">Back to Sign In</a></p>
+      <p><Link to="/login">Back to Sign In</Link></p>
     </div>
   );
 }

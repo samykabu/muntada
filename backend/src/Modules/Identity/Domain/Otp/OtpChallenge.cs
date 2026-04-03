@@ -82,6 +82,18 @@ public sealed class OtpChallenge : AggregateRoot<Guid>
     }
 
     /// <summary>
+    /// Marks this challenge as expired (e.g., by a cleanup job when past expiry time).
+    /// Only transitions from <see cref="OtpStatus.Pending"/> status.
+    /// </summary>
+    public void MarkExpired()
+    {
+        if (Status != OtpStatus.Pending) return;
+
+        Status = OtpStatus.Expired;
+        IncrementVersion();
+    }
+
+    /// <summary>
     /// Marks this challenge as successfully verified.
     /// Only transitions from <see cref="OtpStatus.Pending"/> status.
     /// </summary>

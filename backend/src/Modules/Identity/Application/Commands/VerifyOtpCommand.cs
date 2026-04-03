@@ -104,7 +104,8 @@ public sealed class VerifyOtpCommandHandler : IRequestHandler<VerifyOtpCommand, 
         var deviceInfo = new DeviceInfo(request.UserAgent, request.IpAddress);
         var session = Session.Create(user.Id, deviceInfo, refreshToken.Id, SessionLifetime);
 
-        refreshToken = RefreshToken.Create(session.Id, refreshTokenHash, SessionLifetime);
+        // Bind the refresh token to the session
+        refreshToken.BindToSession(session.Id);
 
         var accessToken = _tokenService.GenerateAccessToken(user.Id.ToString(), tenantId: null, scopes: []);
 
@@ -118,6 +119,6 @@ public sealed class VerifyOtpCommandHandler : IRequestHandler<VerifyOtpCommand, 
         var @event = UserLoggedInEvent.Create(user.Id, session.Id);
         await _eventPublisher.PublishAsync(@event, cancellationToken);
 
-        return new LoginResult(accessToken, user.Id.ToString());
+        return new LoginResult(accessToken, refreshTokenPlaintext, user.Id.ToString());
     }
 }

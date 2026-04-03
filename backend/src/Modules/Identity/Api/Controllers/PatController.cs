@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -39,9 +40,8 @@ public sealed class PatController : ControllerBase
         [FromBody] CreatePatRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract UserId and TenantId from authenticated user claims
-        var userId = Guid.Empty;
-        var tenantId = Guid.Empty;
+        var userId = GetUserId();
+        var tenantId = Guid.Empty; // TODO: Extract TenantId from claims when multi-tenancy is implemented
 
         var command = new CreatePatCommand(userId, tenantId, request.Name, request.Scopes, request.ExpiresInDays);
         var result = await _sender.Send(command, cancellationToken);
@@ -59,9 +59,8 @@ public sealed class PatController : ControllerBase
     [ProducesResponseType(typeof(List<PatDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListPats(CancellationToken cancellationToken)
     {
-        // TODO: Extract UserId and TenantId from authenticated user claims
-        var userId = Guid.Empty;
-        var tenantId = Guid.Empty;
+        var userId = GetUserId();
+        var tenantId = Guid.Empty; // TODO: Extract TenantId from claims when multi-tenancy is implemented
 
         var query = new ListPatsQuery(userId, tenantId);
         var pats = await _sender.Send(query, cancellationToken);
@@ -91,8 +90,7 @@ public sealed class PatController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract UserId from authenticated user claims
-        var userId = Guid.Empty;
+        var userId = GetUserId();
 
         var command = new RevokePatCommand(id, userId);
         var result = await _sender.Send(command, cancellationToken);
@@ -102,4 +100,13 @@ public sealed class PatController : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// Extracts the authenticated user's ID from JWT claims.
+    /// </summary>
+    private Guid GetUserId() =>
+        Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value
+            ?? throw new UnauthorizedAccessException());
 }

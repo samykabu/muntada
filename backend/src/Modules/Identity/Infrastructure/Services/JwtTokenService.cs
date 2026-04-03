@@ -8,7 +8,7 @@ using Muntada.Identity.Application.Services;
 namespace Muntada.Identity.Infrastructure.Services;
 
 /// <summary>
-/// JWT token service using RS256 (asymmetric) signing with key ID (kid) rotation support.
+/// JWT token service using HS256 (symmetric) with key ID (kid) rotation support.
 /// Access tokens are short-lived (15 minutes default, configurable).
 /// Refresh tokens are opaque cryptographically secure strings.
 /// </summary>

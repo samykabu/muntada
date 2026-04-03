@@ -16,26 +16,29 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-/** Provides authentication state and token management to the app. */
+/**
+ * Provides authentication state and token management to the app.
+ * Access tokens are kept in memory only (not localStorage) to reduce XSS risk.
+ * Refresh tokens are HTTP-only cookies managed by the server.
+ * UserId is persisted in sessionStorage for page reload survival.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
-    accessToken: localStorage.getItem('accessToken'),
-    userId: localStorage.getItem('userId'),
-    isAuthenticated: !!localStorage.getItem('accessToken'),
+    accessToken: null, // In-memory only — not persisted (XSS protection)
+    userId: sessionStorage.getItem('userId'),
+    isAuthenticated: !!sessionStorage.getItem('userId'),
   });
 
   const [refreshToken] = useRefreshMutation();
   const [logoutMutation] = useLogoutMutation();
 
   const setAuth = useCallback((token: string, userId: string) => {
-    localStorage.setItem('accessToken', token);
-    localStorage.setItem('userId', userId);
+    sessionStorage.setItem('userId', userId);
     setState({ accessToken: token, userId, isAuthenticated: true });
   }, []);
 
   const clearAuth = useCallback(() => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('userId');
+    sessionStorage.removeItem('userId');
     setState({ accessToken: null, userId: null, isAuthenticated: false });
   }, []);
 
@@ -43,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await refreshToken().unwrap();
       setState((prev) => ({ ...prev, accessToken: result.accessToken }));
-      localStorage.setItem('accessToken', result.accessToken);
     } catch {
       clearAuth();
     }

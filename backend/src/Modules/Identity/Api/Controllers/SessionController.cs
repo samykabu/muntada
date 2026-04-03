@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -27,25 +28,27 @@ public sealed class SessionController : ControllerBase
     }
 
     /// <summary>
-    /// Refreshes an access token using a valid refresh token.
+    /// Refreshes an access token using the refresh token stored in the HTTP-only cookie.
     /// </summary>
-    /// <param name="request">The refresh token request containing the refresh token value.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>200 OK with a new access token.</returns>
     [HttpPost("auth/refresh")]
     [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshToken(
-        [FromBody] RefreshTokenRequest request,
         CancellationToken cancellationToken)
     {
+        var refreshTokenValue = Request.Cookies["refresh_token"];
+        if (string.IsNullOrEmpty(refreshTokenValue))
+            return Unauthorized();
+
         var userAgent = HttpContext.Request.Headers.UserAgent.ToString();
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-        var command = new RefreshTokenCommand(request.RefreshToken, userAgent, ipAddress);
+        var command = new RefreshTokenCommand(refreshTokenValue, userAgent, ipAddress);
         var result = await _sender.Send(command, cancellationToken);
 
-        return Ok(new RefreshTokenResponse(result.AccessToken, ExpiresIn: 3600, TokenType: "Bearer"));
+        return Ok(new RefreshTokenResponse(result.AccessToken, ExpiresIn: 900, TokenType: "Bearer"));
     }
 
     /// <summary>
@@ -57,9 +60,10 @@ public sealed class SessionController : ControllerBase
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
-        // TODO: Extract SessionId and UserId from authenticated user claims
-        var sessionId = Guid.Empty;
-        var userId = Guid.Empty;
+        var userId = GetUserId();
+        // SessionId may be included as a claim in the JWT; fallback to Guid.Empty if absent
+        var sessionIdClaim = User.FindFirst("sid")?.Value;
+        var sessionId = sessionIdClaim is not null ? Guid.Parse(sessionIdClaim) : Guid.Empty;
 
         var command = new LogoutCommand(sessionId, userId);
         var result = await _sender.Send(command, cancellationToken);
@@ -75,8 +79,7 @@ public sealed class SessionController : ControllerBase
     [ProducesResponseType(typeof(List<SessionResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListSessions(CancellationToken cancellationToken)
     {
-        // TODO: Extract UserId from authenticated user claims
-        var userId = Guid.Empty;
+        var userId = GetUserId();
 
         var query = new ListSessionsQuery(userId);
         var sessions = await _sender.Send(query, cancellationToken);
@@ -106,8 +109,7 @@ public sealed class SessionController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract UserId from authenticated user claims
-        var userId = Guid.Empty;
+        var userId = GetUserId();
 
         var command = new RevokeSessionCommand(id, userId);
         var result = await _sender.Send(command, cancellationToken);
@@ -133,12 +135,21 @@ public sealed class SessionController : ControllerBase
         if (!exceptCurrent)
             return BadRequest("The exceptCurrent query parameter must be true.");
 
-        // TODO: Extract SessionId and UserId from authenticated user claims
-        var currentSessionId = Guid.Empty;
-        var userId = Guid.Empty;
+        var userId = GetUserId();
+        var sessionIdClaim = User.FindFirst("sid")?.Value;
+        var currentSessionId = sessionIdClaim is not null ? Guid.Parse(sessionIdClaim) : Guid.Empty;
 
         var command = new RevokeAllOtherSessionsCommand(currentSessionId, userId);
         var count = await _sender.Send(command, cancellationToken);
         return Ok(count);
     }
+
+    /// <summary>
+    /// Extracts the authenticated user's ID from JWT claims.
+    /// </summary>
+    private Guid GetUserId() =>
+        Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value
+            ?? throw new UnauthorizedAccessException());
 }

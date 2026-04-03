@@ -51,7 +51,8 @@ public sealed class GenerateGuestMagicLinkCommandHandler : IRequestHandler<Gener
     public async Task<GenerateGuestMagicLinkResult> Handle(GenerateGuestMagicLinkCommand request, CancellationToken cancellationToken)
     {
         // Generate 32-byte random token
-        var rawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        var rawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
 
         // Hash with SHA-256 for storage
         var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));

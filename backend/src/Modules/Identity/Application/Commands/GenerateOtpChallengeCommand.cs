@@ -27,7 +27,7 @@ public sealed record GenerateOtpChallengeResult(Guid ChallengeId);
 /// </summary>
 public sealed class GenerateOtpChallengeCommandHandler : IRequestHandler<GenerateOtpChallengeCommand, GenerateOtpChallengeResult>
 {
-    private static readonly TimeSpan OtpExpiry = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan OtpExpiry = TimeSpan.FromMinutes(15);
     private static readonly Regex E164Pattern = new(@"^\+[1-9]\d{1,14}$", RegexOptions.Compiled);
 
     private readonly IdentityDbContext _dbContext;
@@ -67,7 +67,7 @@ public sealed class GenerateOtpChallengeCommandHandler : IRequestHandler<Generat
         }
 
         // Generate 6-digit OTP code
-        var code = RandomNumberGenerator.GetInt32(100000, 999999).ToString("D6");
+        var code = RandomNumberGenerator.GetInt32(100000, 1_000_000).ToString("D6");
 
         // Hash code with SHA-256 for storage
         var codeHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(code)));

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -38,8 +39,7 @@ public sealed class MagicLinkController : ControllerBase
         [FromBody] CreateMagicLinkRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract UserId from authenticated user claims
-        var userId = Guid.Empty;
+        var userId = GetUserId();
 
         var command = new GenerateGuestMagicLinkCommand(request.RoomOccurrenceId, userId);
         var result = await _sender.Send(command, cancellationToken);
@@ -84,8 +84,7 @@ public sealed class MagicLinkController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract UserId from authenticated user claims
-        var userId = Guid.Empty;
+        var userId = GetUserId();
 
         var command = new RevokeMagicLinkCommand(id, userId);
         var result = await _sender.Send(command, cancellationToken);
@@ -95,4 +94,13 @@ public sealed class MagicLinkController : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// Extracts the authenticated user's ID from JWT claims.
+    /// </summary>
+    private Guid GetUserId() =>
+        Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value
+            ?? throw new UnauthorizedAccessException());
 }

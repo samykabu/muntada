@@ -65,10 +65,10 @@ public sealed class AuthController : ControllerBase
         var result = await _sender.Send(command, cancellationToken);
 
         // Set refresh token as HTTP-only cookie
-        Response.Cookies.Append("refresh_token", result.AccessToken, new CookieOptions
+        Response.Cookies.Append("refresh_token", result.RefreshToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
+            Secure = Request.IsHttps,
             SameSite = SameSiteMode.Strict,
             Path = "/api/v1/identity/auth",
             MaxAge = TimeSpan.FromDays(30),

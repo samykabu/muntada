@@ -16,5 +16,6 @@ public sealed record LoginCommand(string Email, string Password, string UserAgen
 /// Result returned after successful user login.
 /// </summary>
 /// <param name="AccessToken">The signed JWT access token.</param>
+/// <param name="RefreshToken">The plaintext refresh token (returned only once; stored hashed).</param>
 /// <param name="UserId">The unique identifier of the authenticated user.</param>
-public sealed record LoginResult(string AccessToken, string UserId);
+public sealed record LoginResult(string AccessToken, string RefreshToken, string UserId);

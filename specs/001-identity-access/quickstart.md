@@ -8,7 +8,7 @@
 ## Prerequisites
 
 1. **Epic 0 (Foundation) must be complete.** The shared kernel, Aspire AppHost, database infrastructure, and CI/CD pipeline must be operational.
-2. **.NET 8 SDK** installed (verify: `dotnet --version`).
+2. **.NET 10 SDK** installed (verify: `dotnet --version`).
 3. **Node.js 20+** installed (verify: `node --version`).
 4. **Docker Desktop** running (required by Aspire for SQL Server, Redis, RabbitMQ, MailDev containers).
 
@@ -292,6 +292,6 @@ dotnet ef migrations remove \
 
 ### JWT validation errors
 
-- Verify the RSA key pair is configured in the development environment.
-- Check that the `kid` in the JWT header matches an available key in the JWKS endpoint.
+- Verify the symmetric secret key is configured in the development environment.
+- Check that the `kid` in the JWT header matches the configured key ID.
 - Confirm clock skew settings in `TokenValidationParameters` allow for minor time differences.

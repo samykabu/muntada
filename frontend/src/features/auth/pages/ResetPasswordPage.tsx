@@ -1,16 +1,27 @@
 import { useState, type FormEvent } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useResetPasswordMutation } from '../api/authApi';
 
 /** Reset password page — entered via email link with token. */
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token') ?? '';
+  const token = searchParams.get('token');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [resetPassword, { isLoading }] = useResetPasswordMutation();
   const navigate = useNavigate();
+
+  // Guard: show error if no token in URL
+  if (!token) {
+    return (
+      <div style={{ maxWidth: 400, margin: '2rem auto', padding: '1rem' }}>
+        <h1>Invalid Reset Link</h1>
+        <p>This password reset link is invalid or missing a token.</p>
+        <Link to="/forgot-password">Request a new reset link</Link>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

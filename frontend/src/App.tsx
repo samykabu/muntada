@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './features/auth/context/AuthContext';
 import { RegisterPage } from './features/auth/pages/RegisterPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
@@ -32,7 +32,7 @@ function Home() {
   return (
     <div style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
       <h1>Muntada</h1>
-      <p>Platform is running. <a href="/login">Sign in</a> or <a href="/register">create an account</a>.</p>
+      <p>Platform is running. <Link to="/login">Sign in</Link> or <Link to="/register">create an account</Link>.</p>
     </div>
   );
 }
