@@ -157,11 +157,11 @@
 **Purpose**: Fallback orchestration for environments without .NET SDK
 **User Story**: US-0.1
 
-- [ ] T062 Create `docker-compose.yml` with all services: SQL Server, Redis, RabbitMQ, MinIO, LiveKit, backend, frontend — health checks, named volumes, proper startup ordering
-- [ ] T063 [P] Create `docker-compose.test.yml` for CI integration test execution
-- [ ] T064 [P] Create `backend/Dockerfile` — multi-stage build (SDK build → runtime), target < 800MB
-- [ ] T065 Create `Makefile` with targets: `setup` (Aspire primary), `aspire`, `up` (Docker Compose fallback), `down`, `clean`, `test`, `docker-build`, `logs`, `help`
-- [ ] T066 Verify `make setup` completes in < 10 minutes and all services are healthy
+- [x] T062 Create `docker-compose.yml` with all services: SQL Server, Redis, RabbitMQ, MinIO, LiveKit, backend, frontend — health checks, named volumes, proper startup ordering
+- [x] T063 [P] Create `docker-compose.test.yml` for CI integration test execution
+- [x] T064 [P] Create `backend/Dockerfile` — multi-stage build (SDK build → runtime), target < 800MB
+- [x] T065 Create `Makefile` with targets: `setup` (Aspire primary), `aspire`, `up` (Docker Compose fallback), `down`, `clean`, `test`, `docker-build`, `logs`, `help`
+- [x] T066 Verify `make setup` completes in < 10 minutes and all services are healthy
 
 **Checkpoint**: Docker Compose fallback works. Makefile provides all convenience targets.
 

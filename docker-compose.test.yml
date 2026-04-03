@@ -1,0 +1,18 @@
+## Docker Compose for CI integration tests
+## Extends the main docker-compose.yml with test-specific settings
+
+services:
+  sql-server:
+    extends:
+      file: docker-compose.yml
+      service: sql-server
+
+  redis:
+    extends:
+      file: docker-compose.yml
+      service: redis
+
+  rabbitmq:
+    extends:
+      file: docker-compose.yml
+      service: rabbitmq
