@@ -1,6 +1,6 @@
 # Epic 0: Foundation & Infrastructure
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Specification
 **Last Updated:** 2026-04-03
 **Owner:** Platform Engineering
@@ -19,41 +19,104 @@ This epic establishes the foundational infrastructure, tooling, and shared patte
 - Infrastructure provisioning (SQL Server, Redis, RabbitMQ, MinIO, LiveKit cluster)
 - Shared kernel (base entity types, opaque ID generation, audit event base, integration event bus, error handling middleware, OpenTelemetry)
 - Environment configuration management
-- Docker Compose for local development
+- .NET Aspire 13.2 AppHost as mandatory local development orchestrator (Docker Compose as fallback only)
+- Aspire ServiceDefaults project for shared OpenTelemetry, health checks, and resilience configuration
+
+---
+
+## Clarifications
+
+### Session 2026-04-03
+
+- Q: Which container registry should CI/CD use? → A: Docker Hub (docker.io)
+- Q: Is LiveKit self-hosted or SaaS? → A: Self-hosted LiveKit OSS in Kubernetes (per constitution, GCC data residency)
+- Q: FR-0.8 state management "or similar" — what specifically? → A: Redux Toolkit (RTK) with RTK Query (resolved from research R6)
 
 ---
 
 ## User Stories
 
-### US-0.1: Developer Environment Setup
+### US-0.1: Developer Environment Setup (Aspire-First)
+**Priority:** P1
+**Story Points:** 21
+**Owner:** Platform Engineering
+
+As a developer, I want to clone the Muntada repository and run the entire platform locally via a single `dotnet run --project AppHost` command using .NET Aspire 13.2 so that I can start contributing without lengthy setup or manual service wiring.
+
+#### Acceptance Criteria
+
+**Given** a developer has cloned the repository and has .NET SDK 8+ and Docker installed
+**When** they run `dotnet run --project aspire/Muntada.AppHost`
+**Then** Aspire provisions all required services (SQL Server, Redis, RabbitMQ, MinIO, LiveKit) as containers, starts the backend API and frontend SPA with hot-reload, and opens the Aspire Dashboard
+
+**Given** the Aspire-orchestrated environment is running
+**When** they navigate to `http://localhost:3000`
+**Then** the React frontend loads and is able to connect to the backend API at `http://localhost:5000`
+
+**Given** the Aspire Dashboard is running
+**When** they navigate to `http://localhost:18888`
+**Then** they can see all services with health status, distributed traces, structured logs, and metrics — without separate Jaeger setup
+
+**Given** a developer does not have .NET SDK installed
+**When** they run `make setup` as a fallback
+**Then** Docker Compose provisions all services as a degraded alternative (no Aspire Dashboard, no automatic service discovery)
+
+#### Definition of Done
+- .NET Aspire 13.2 AppHost project (`aspire/Muntada.AppHost`) declares all service dependencies
+- Aspire ServiceDefaults project (`aspire/Muntada.ServiceDefaults`) provides shared OpenTelemetry, health checks, and resilience configuration
+- All backend services reference ServiceDefaults for consistent observability
+- Docker Compose file retained as fallback for environments without .NET SDK
+- Makefile with `setup`, `up`, `down`, `clean` targets (using Aspire as primary)
+- `.env.local` template with sensible defaults
+- README with step-by-step setup instructions (Aspire primary, Docker Compose fallback)
+- Setup completes in < 10 minutes on standard developer machine
+- All services health-checked and ready before startup complete
+- Database migrations auto-applied on startup
+- Aspire Dashboard accessible at `http://localhost:18888` with all services visible
+
+---
+
+### US-0.1b: Aspire AppHost & ServiceDefaults Initialization
 **Priority:** P1
 **Story Points:** 13
 **Owner:** Platform Engineering
 
-As a developer, I want to clone the Muntada repository and run the entire platform locally in under 10 minutes so that I can start contributing without lengthy setup.
+As a platform engineer, I want a .NET Aspire 13.2 AppHost project that orchestrates all platform services so that every developer uses a consistent, single-command local environment with built-in observability.
 
 #### Acceptance Criteria
 
-**Given** a developer has cloned the repository
-**When** they run `make setup` (or equivalent)
-**Then** Docker Compose provisions all required services (SQL Server, Redis, RabbitMQ, MinIO, LiveKit) and both backend and frontend are running with hot-reload enabled
+**Given** the Aspire AppHost project is created at `aspire/Muntada.AppHost`
+**When** a developer runs `dotnet run --project aspire/Muntada.AppHost`
+**Then** the following services are provisioned as containers and registered in service discovery:
+- SQL Server (with per-module schemas)
+- Redis (for caching and session store)
+- RabbitMQ (for async messaging)
+- MinIO (S3-compatible object storage)
+- LiveKit (media server)
+- Backend API (ASP.NET Core, with hot-reload)
+- Frontend SPA (React/Vite dev server)
 
-**Given** the developer environment is running
-**When** they navigate to `http://localhost:3000`
-**Then** the React frontend loads and is able to connect to the backend API at `http://localhost:5000`
+**Given** a new module is being created in a subsequent epic
+**When** the module needs infrastructure dependencies
+**Then** the module MUST register itself and its dependencies in the Aspire AppHost `Program.cs`
 
-**Given** the backend is running
-**When** they inspect the logs via `docker-compose logs -f`
-**Then** OpenTelemetry traces are emitted and visible in a local Jaeger UI at `http://localhost:16686`
+**Given** the Aspire ServiceDefaults project exists at `aspire/Muntada.ServiceDefaults`
+**When** any backend service references it
+**Then** the service automatically gets OpenTelemetry tracing, structured logging, health check endpoints, and HTTP resilience configuration
+
+**Given** the Aspire environment is running
+**When** a service fails or becomes unhealthy
+**Then** the Aspire Dashboard shows the failure with logs, traces, and health status in real-time
 
 #### Definition of Done
-- Docker Compose file includes all stateful services
-- Makefile with `setup`, `up`, `down`, `clean` targets
-- `.env.local` template with sensible defaults
-- README with step-by-step setup instructions
-- Setup completes in < 10 minutes on standard developer machine
-- All services health-checked and ready before startup complete
-- Database migrations auto-applied on startup
+- `aspire/Muntada.AppHost/Muntada.AppHost.csproj` targeting .NET Aspire 13.2+
+- `aspire/Muntada.AppHost/Program.cs` with all service registrations
+- `aspire/Muntada.ServiceDefaults/Muntada.ServiceDefaults.csproj` with shared configuration
+- `aspire/Muntada.ServiceDefaults/Extensions.cs` configuring OpenTelemetry, health checks, resilience
+- Backend API project references ServiceDefaults
+- All services visible in Aspire Dashboard with health status
+- Service discovery works (no hardcoded connection strings in development)
+- Documentation on how new modules register in AppHost
 
 ---
 
@@ -92,7 +155,7 @@ As a platform engineer, I want a GitHub Actions CI/CD pipeline that validates ev
 - GitHub Actions workflow file (`.github/workflows/ci-cd.yml`)
 - Docker image build for ASP.NET Core backend
 - Docker image build for React frontend
-- Container registry configured (docker.io or internal registry)
+- Container registry configured (Docker Hub — docker.io)
 - Test coverage reports generated and tracked
 - Build artifacts (binaries, reports) retained for 30 days
 - Deployment workflow for staging and production environments
@@ -281,11 +344,25 @@ As a platform engineer, I want environment-specific configuration to be managed 
 
 **FR-0.7:** The frontend shall be a single-page application (SPA) built with React 18+ and TypeScript, with strict type checking enabled.
 
-**FR-0.8:** State management shall use Redux Toolkit (or similar) for global state with modules aligned to backend features.
+**FR-0.8:** State management shall use Redux Toolkit (RTK) with RTK Query for global and server state, with modules aligned to backend features.
 
 **FR-0.9:** HTTP requests shall use a typed API client generated from OpenAPI/Swagger schema or hand-written with Axios/React Query for data fetching and caching.
 
 **FR-0.10:** The frontend shall support lazy loading of feature modules and code-splitting to minimize initial bundle size.
+
+### Local Development Orchestration (.NET Aspire 13.2)
+
+**FR-0.16:** All projects in this workspace MUST be runnable using .NET Aspire 13.2 or above as the local development orchestrator. The Aspire AppHost project (`aspire/Muntada.AppHost`) is the single entry point for local development.
+
+**FR-0.17:** The Aspire AppHost MUST declare all infrastructure dependencies (SQL Server, Redis, RabbitMQ, MinIO, LiveKit) as container resources, provisioned automatically on startup.
+
+**FR-0.18:** The Aspire ServiceDefaults project (`aspire/Muntada.ServiceDefaults`) MUST provide shared configuration for OpenTelemetry tracing, structured logging, health check endpoints, and HTTP client resilience. All backend services MUST reference this project.
+
+**FR-0.19:** Service discovery in local development MUST use Aspire's built-in service discovery — no hardcoded connection strings in `appsettings.Development.json`. Connection strings, Redis endpoints, and RabbitMQ URLs are injected by the Aspire AppHost at runtime.
+
+**FR-0.20:** Every new module added in subsequent epics MUST register itself and its dependencies in the Aspire AppHost `Program.cs`. Failure to register is a build/review gate violation.
+
+**FR-0.21:** Docker Compose SHALL be retained as a fallback orchestrator for environments that cannot run .NET SDK (e.g., CI containers without SDK). Docker Compose MUST NOT be the primary local development method.
 
 ### Infrastructure & Deployment
 
@@ -337,16 +414,19 @@ As a platform engineer, I want environment-specific configuration to be managed 
 
 ## Success Criteria
 
-- Developer can clone repo and have a fully functional local environment in < 10 minutes
+- Developer can clone repo and run `dotnet run --project aspire/Muntada.AppHost` to have a fully functional local environment in < 10 minutes
+- Aspire Dashboard shows all services with health status, traces, and logs at `http://localhost:18888`
+- No hardcoded connection strings in development — all injected via Aspire service discovery
 - All PRs build and test successfully before merge
 - Kubernetes cluster has 3 isolated namespaces with proper RBAC
-- All infrastructure components are provisioned via Helm charts (no manual setup)
+- All infrastructure components are provisioned via Helm charts (no manual setup) in staging/production
 - 100% of domain entities use shared kernel base classes
-- OpenTelemetry traces visible in Jaeger for all requests and background jobs
+- OpenTelemetry traces visible via Aspire Dashboard (dev) and Jaeger (staging/prod) for all requests and background jobs
 - Configuration is environment-specific with no hardcoded secrets
 - Docker images are < 500MB for frontend, < 800MB for backend
 - Health checks pass for all services within 30 seconds of startup
 - Database migrations can be applied and rolled back safely
+- Every new module registers in Aspire AppHost upon creation
 
 ---
 
@@ -370,19 +450,19 @@ As a platform engineer, I want environment-specific configuration to be managed 
 
 1. **Kubernetes Cluster:** A self-hosted Kubernetes cluster (1.27+) is provisioned and accessible via `kubeconfig`.
 
-2. **Container Registry:** A container registry (Docker Hub, ECR, or internal) is configured and accessible to the CI/CD pipeline and Kubernetes nodes.
+2. **Container Registry:** Docker Hub (docker.io) is used as the container registry, accessible to the CI/CD pipeline and Kubernetes nodes.
 
 3. **DNS:** Kubernetes DNS (`coredns`) is functional and service discovery works via DNS names.
 
 4. **Storage:** Persistent volumes are backed by reliable storage (NFS, cloud block storage, etc.) with daily snapshots for disaster recovery.
 
-5. **Networking:** Kubernetes cluster has outbound internet access for fetching Docker images and external services (LiveKit SaaS).
+5. **Networking:** Kubernetes cluster has outbound internet access for fetching Docker images. LiveKit is self-hosted within the cluster (not SaaS) per constitution requirements.
 
 6. **Monitoring:** Prometheus and Jaeger are deployed in the cluster or externally accessible for metrics and tracing.
 
 7. **Security:** TLS is terminated at the ingress controller. Certificate management (Let's Encrypt or internal CA) is in place.
 
-8. **Developer Machine:** Developers have Docker, Docker Compose, Make, kubectl, and Helm installed locally.
+8. **Developer Machine:** Developers have .NET SDK 8+, Docker, .NET Aspire 13.2 workload, Make, kubectl, and Helm installed locally.
 
 9. **Git:** Repository uses GitHub with standard branching strategy (main, develop, feature branches).
 
@@ -392,10 +472,13 @@ As a platform engineer, I want environment-specific configuration to be managed 
 
 ## Implementation Notes
 
-- **Mono-repo Structure:** Use a single git repository with clear folder hierarchy: `/src/Services/Backend`, `/src/Services/Frontend`, `/infra/helm`, `/docs`.
-- **Docker Compose:** Include all services with proper health checks and startup dependencies (`depends_on` with conditions).
-- **Makefile:** Provide convenient targets for local development (`make setup`, `make test`, `make docker-build`).
-- **OpenTelemetry:** Configure global metrics and traces for all services with a consistent naming convention.
+- **Aspire AppHost:** Primary local development entry point. `aspire/Muntada.AppHost/Program.cs` declares all service dependencies. Run with `dotnet run --project aspire/Muntada.AppHost`. Aspire 13.2 or above is mandatory.
+- **Aspire ServiceDefaults:** `aspire/Muntada.ServiceDefaults` provides shared OpenTelemetry, health checks, and HTTP resilience. All backend services MUST reference this project.
+- **Mono-repo Structure:** Use a single git repository with clear folder hierarchy: `/aspire`, `/backend`, `/frontend`, `/infra/helm`, `/docs`.
+- **Docker Compose:** Retained as fallback only. Include all services with proper health checks and startup dependencies (`depends_on` with conditions).
+- **Makefile:** Provide convenient targets for local development (`make setup` using Aspire, `make test`, `make docker-build`).
+- **OpenTelemetry:** Configured centrally in ServiceDefaults project. Aspire Dashboard replaces Jaeger for local development.
 - **Error Handling:** Use structured logging (Serilog) with correlation IDs for request tracing.
-- **Testing:** Unit tests in each module, integration tests that spin up dependencies via Docker Compose.
+- **Testing:** Unit tests in each module, integration tests that spin up dependencies via Aspire (or Docker Compose in CI).
 - **Documentation:** Keep README and CONTRIBUTING guide updated with architecture diagrams and runbooks.
+- **Module Registration:** Every new module MUST be registered in `aspire/Muntada.AppHost/Program.cs` upon creation.
