@@ -21,12 +21,12 @@
 
 **Purpose**: Identity module project structure, DbContext, Aspire registration
 
-- [ ] T001 Create `backend/src/Modules/Identity/Identity.csproj` with references to SharedKernel, EF Core, BCrypt.Net-Next, MediatR, FluentValidation
-- [ ] T002 [P] Create directory structure: `Domain/{User,Session,Otp,GuestLink,Pat,PasswordReset,EmailVerification,Events}`, `Application/{Commands,Queries,Validators,Services,BackgroundJobs}`, `Infrastructure/{Services,Repositories,RateLimiting}`, `Api/{Controllers,Dtos}`
-- [ ] T003 Create `backend/src/Modules/Identity/Infrastructure/IdentityDbContext.cs` with `[identity]` schema configuration
-- [ ] T004 [P] Create `backend/tests/Modules/Identity.Tests/Identity.Tests.csproj` with xUnit, FluentAssertions, Moq references to Identity project
-- [ ] T005 Register Identity module in Aspire AppHost (`aspire/Muntada.AppHost/AppHost.cs`) and add Identity.csproj to solution
-- [ ] T006 Add Identity project reference to `backend/src/Muntada.Api/Muntada.Api.csproj` and register services in `Program.cs`
+- [x] T001 Create `backend/src/Modules/Identity/Identity.csproj` with references to SharedKernel, EF Core, BCrypt.Net-Next, MediatR, FluentValidation
+- [x] T002 [P] Create directory structure: `Domain/{User,Session,Otp,GuestLink,Pat,PasswordReset,EmailVerification,Events}`, `Application/{Commands,Queries,Validators,Services,BackgroundJobs}`, `Infrastructure/{Services,Repositories,RateLimiting}`, `Api/{Controllers,Dtos}`
+- [x] T003 Create `backend/src/Modules/Identity/Infrastructure/IdentityDbContext.cs` with `[identity]` schema configuration
+- [x] T004 [P] Create `backend/tests/Modules/Identity.Tests/Identity.Tests.csproj` with xUnit, FluentAssertions, Moq references to Identity project
+- [x] T005 Register Identity module in Aspire AppHost (`aspire/Muntada.AppHost/AppHost.cs`) and add Identity.csproj to solution
+- [x] T006 Add Identity project reference to `backend/src/Muntada.Api/Muntada.Api.csproj` and register services in `Program.cs`
 
 **Checkpoint**: Identity module compiles, DbContext configured, registered in Aspire.
 

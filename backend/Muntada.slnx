@@ -10,4 +10,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Muntada.SharedKernel.Tests/Muntada.SharedKernel.Tests.csproj" />
   </Folder>
+  <Folder Name="/tests/Modules/">
+    <Project Path="tests/Modules/Identity.Tests/Identity.Tests.csproj" />
+  </Folder>
 </Solution>
