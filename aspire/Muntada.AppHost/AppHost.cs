@@ -37,7 +37,8 @@ var api = builder.AddProject<Projects.Muntada_Api>("api")
     .WaitFor(rabbitmq);
 
 // Frontend SPA — Vite dev server with proxy to backend API
-var frontend = builder.AddNpmApp("frontend", "../../frontend")
+// Uses Aspire.Hosting.JavaScript (Aspire 13.2+, replaces deprecated Aspire.Hosting.NodeJs)
+var frontend = builder.AddJavaScriptApp("frontend", "../../frontend")
     .WithReference(api)
     .WithHttpEndpoint(port: 3000, env: "PORT")
     .WithExternalHttpEndpoints();

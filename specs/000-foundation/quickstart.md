@@ -9,7 +9,7 @@
 
 | Tool | Minimum Version | Purpose |
 |------|----------------|---------|
-| .NET SDK | 8.0+ | Backend build, Aspire AppHost |
+| .NET SDK | 10.0+ | Backend build, Aspire AppHost |
 | .NET Aspire | 13.2 | **Primary** local dev orchestrator (mandatory) |
 | Docker | 24.0+ | Container runtime (used by Aspire for dependencies) |
 | Docker Compose | 2.20+ | Fallback orchestration (not primary) |

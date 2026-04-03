@@ -6,7 +6,7 @@ Private, invite-only virtual meeting rooms for the GCC region.
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| .NET SDK | 8.0+ | Backend, Aspire AppHost |
+| .NET SDK | 10.0+ | Backend, Aspire AppHost |
 | .NET Aspire | 13.2+ | **Primary** local dev orchestrator |
 | Docker | 24.0+ | Container runtime (used by Aspire) |
 | Node.js | 20 LTS+ | Frontend build |
@@ -45,7 +45,7 @@ make up
 ```
 muntada/
 ├── aspire/            # .NET Aspire 13.2 orchestrator
-├── backend/           # ASP.NET Core 8+ (C#)
+├── backend/           # ASP.NET Core 10 (C#)
 │   ├── src/Muntada.Api/           # API host
 │   ├── src/Muntada.SharedKernel/  # Shared domain types
 │   └── tests/
@@ -67,7 +67,7 @@ make help          # Show all targets
 
 ## Architecture
 
-- **Backend**: ASP.NET Core 8+ modular monolith, Clean Architecture
+- **Backend**: ASP.NET Core 10 modular monolith, Clean Architecture
 - **Frontend**: React 19 + Redux Toolkit + RTK Query
 - **Dev**: .NET Aspire 13.2 (primary), Docker Compose (fallback)
 - **Deploy**: Kubernetes + Helm, Docker Hub registry

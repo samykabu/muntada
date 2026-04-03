@@ -42,7 +42,7 @@ public sealed class ValidationBehavior<TRequest, TResponse>
     {
         if (!_validators.Any())
         {
-            return await next();
+            return await next(cancellationToken);
         }
 
         var context = new FluentValidation.ValidationContext<TRequest>(request);
@@ -64,6 +64,6 @@ public sealed class ValidationBehavior<TRequest, TResponse>
             throw new ValidationException(errors);
         }
 
-        return await next();
+        return await next(cancellationToken);
     }
 }

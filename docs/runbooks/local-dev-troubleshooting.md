@@ -6,7 +6,7 @@
 
 **Fix**:
 - Ensure Docker Desktop is running
-- Check .NET SDK: `dotnet --version` (needs 8.0+)
+- Check .NET SDK: `dotnet --version` (needs 10.0+)
 - Check Aspire workload: `dotnet workload list`
 - Install if missing: `dotnet workload install aspire`
 

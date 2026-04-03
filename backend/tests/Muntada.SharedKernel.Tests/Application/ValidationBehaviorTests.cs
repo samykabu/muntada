@@ -26,7 +26,7 @@ public class ValidationBehaviorTests
 
         var result = await behavior.Handle(
             new TestRequest(""),
-            () => Task.FromResult("OK"),
+            (ct) => Task.FromResult("OK"),
             CancellationToken.None);
 
         result.Should().Be("OK");
@@ -40,7 +40,7 @@ public class ValidationBehaviorTests
 
         var result = await behavior.Handle(
             new TestRequest("Valid Name"),
-            () => Task.FromResult("OK"),
+            (ct) => Task.FromResult("OK"),
             CancellationToken.None);
 
         result.Should().Be("OK");
@@ -54,7 +54,7 @@ public class ValidationBehaviorTests
 
         var act = () => behavior.Handle(
             new TestRequest(""),
-            () => Task.FromResult("OK"),
+            (ct) => Task.FromResult("OK"),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<Muntada.SharedKernel.Domain.Exceptions.ValidationException>()
@@ -85,11 +85,11 @@ public class ValidationBehaviorTests
 
         var act = () => behavior.Handle(
             new TestRequest(""),
-            () => Task.FromResult("OK"),
+            (ct) => Task.FromResult("OK"),
             CancellationToken.None);
 
         var exception = await act.Should()
             .ThrowAsync<Muntada.SharedKernel.Domain.Exceptions.ValidationException>();
-        exception.Which.Errors.Should().HaveCountGreaterOrEqualTo(2);
+        exception.Which.Errors.Should().HaveCountGreaterThanOrEqualTo(2);
     }
 }
