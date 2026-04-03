@@ -93,22 +93,22 @@
 
 ### Unit Tests (Write FIRST)
 
-- [ ] T031 [P] [US0.5] Write unit tests for `ErrorHandlingMiddleware` in `backend/tests/Muntada.SharedKernel.Tests/Infrastructure/ErrorHandlingMiddlewareTests.cs`
-- [ ] T032 [P] [US0.5] Write unit tests for `IntegrationEventPublisher` in `backend/tests/Muntada.SharedKernel.Tests/Infrastructure/IntegrationEventPublisherTests.cs`
-- [ ] T033 [P] [US0.5] Write unit tests for `ValidationBehavior` in `backend/tests/Muntada.SharedKernel.Tests/Application/ValidationBehaviorTests.cs`
+- [x] T031 [P] [US0.5] Write unit tests for `ErrorHandlingMiddleware` in `backend/tests/Muntada.SharedKernel.Tests/Infrastructure/ErrorHandlingMiddlewareTests.cs`
+- [x] T032 [P] [US0.5] Write unit tests for `IntegrationEventPublisher` in `backend/tests/Muntada.SharedKernel.Tests/Infrastructure/IntegrationEventPublisherTests.cs`
+- [x] T033 [P] [US0.5] Write unit tests for `ValidationBehavior` in `backend/tests/Muntada.SharedKernel.Tests/Application/ValidationBehaviorTests.cs`
 
 ### Implementation
 
-- [ ] T034 [US0.5] Implement `IIntegrationEvent` interface in `backend/src/Muntada.SharedKernel/Domain/IIntegrationEvent.cs` — extends IDomainEvent with AggregateId, AggregateType, Version — XML docs
-- [ ] T035 [US0.5] Implement `IIntegrationEventPublisher` interface in `backend/src/Muntada.SharedKernel/Application/IIntegrationEventPublisher.cs` — XML docs
-- [ ] T036 [US0.5] Implement `IntegrationEventPublisher` (MassTransit/RabbitMQ) in `backend/src/Muntada.SharedKernel/Infrastructure/IntegrationEventPublisher.cs` — event routing, DLQ support — XML docs
-- [ ] T037 [US0.5] Implement `ErrorHandlingMiddleware` in `backend/src/Muntada.SharedKernel/Infrastructure/Middleware/ErrorHandlingMiddleware.cs` — RFC 9457 Problem Details, exception-to-HTTP mapping, correlation ID — XML docs
-- [ ] T038 [US0.5] Implement `ValidationBehavior<TRequest,TResponse>` MediatR pipeline in `backend/src/Muntada.SharedKernel/Application/Behaviors/ValidationBehavior.cs` — FluentValidation integration — XML docs
-- [ ] T039 [US0.5] Implement `TelemetryConfiguration` in `backend/src/Muntada.SharedKernel/Infrastructure/Telemetry/TelemetryConfiguration.cs` — ActivitySource setup, OTLP export (Aspire Dashboard in dev, Jaeger in prod) — XML docs
-- [ ] T040 [P] [US0.5] Implement `ActivitySourceExtensions` in `backend/src/Muntada.SharedKernel/Infrastructure/Telemetry/ActivitySourceExtensions.cs` — convenience methods for custom spans — XML docs
-- [ ] T041 [P] [US0.5] Create `BaseTestFixture` in `backend/tests/Muntada.SharedKernel.Tests/BaseTestFixture.cs` — common test setup, mocking helpers
-- [ ] T042 [P] [US0.5] Create `DomainAssertions` in `backend/tests/Muntada.SharedKernel.Tests/Assertions/DomainAssertions.cs` — custom FluentAssertions for domain objects
-- [ ] T043 [US0.5] Verify all unit tests pass (`dotnet test backend/tests/Muntada.SharedKernel.Tests/`)
+- [x] T034 [US0.5] Implement `IIntegrationEvent` interface in `backend/src/Muntada.SharedKernel/Domain/IIntegrationEvent.cs` — extends IDomainEvent with AggregateId, AggregateType, Version — XML docs
+- [x] T035 [US0.5] Implement `IIntegrationEventPublisher` interface in `backend/src/Muntada.SharedKernel/Application/IIntegrationEventPublisher.cs` — XML docs
+- [x] T036 [US0.5] Implement `IntegrationEventPublisher` (MassTransit/RabbitMQ) in `backend/src/Muntada.SharedKernel/Infrastructure/IntegrationEventPublisher.cs` — event routing, DLQ support — XML docs
+- [x] T037 [US0.5] Implement `ErrorHandlingMiddleware` in `backend/src/Muntada.SharedKernel/Infrastructure/Middleware/ErrorHandlingMiddleware.cs` — RFC 9457 Problem Details, exception-to-HTTP mapping, correlation ID — XML docs
+- [x] T038 [US0.5] Implement `ValidationBehavior<TRequest,TResponse>` MediatR pipeline in `backend/src/Muntada.SharedKernel/Application/Behaviors/ValidationBehavior.cs` — FluentValidation integration — XML docs
+- [x] T039 [US0.5] Implement `TelemetryConfiguration` in `backend/src/Muntada.SharedKernel/Infrastructure/Telemetry/TelemetryConfiguration.cs` — ActivitySource setup, OTLP export (Aspire Dashboard in dev, Jaeger in prod) — XML docs
+- [x] T040 [P] [US0.5] Implement `ActivitySourceExtensions` in `backend/src/Muntada.SharedKernel/Infrastructure/Telemetry/ActivitySourceExtensions.cs` — convenience methods for custom spans — XML docs
+- [x] T041 [P] [US0.5] Create `BaseTestFixture` in `backend/tests/Muntada.SharedKernel.Tests/BaseTestFixture.cs` — common test setup, mocking helpers
+- [x] T042 [P] [US0.5] Create `DomainAssertions` in `backend/tests/Muntada.SharedKernel.Tests/Assertions/DomainAssertions.cs` — custom FluentAssertions for domain objects
+- [x] T043 [US0.5] Verify all unit tests pass (`dotnet test backend/tests/Muntada.SharedKernel.Tests/`)
 
 **Checkpoint**: SharedKernel fully implemented and tested. All infrastructure patterns available for downstream modules.
 
@@ -119,14 +119,14 @@
 **Purpose**: ASP.NET Core host application with health check endpoints
 **User Story**: US-0.1, US-0.5
 
-- [ ] T044 Create `Muntada.Api.csproj` at `backend/src/Muntada.Api/` referencing SharedKernel and Aspire ServiceDefaults
-- [ ] T045 Create `backend/src/Muntada.Api/Program.cs` — register middleware (ErrorHandling), MassTransit, FluentValidation, Serilog, ServiceDefaults
-- [ ] T046 Implement health check endpoints (`/health`, `/health/ready`, `/health/live`) per contract in `backend/src/Muntada.Api/` using ASP.NET Core health checks + ServiceDefaults
-- [ ] T047 Create `backend/src/Muntada.Api/appsettings.json` — base config (no secrets)
-- [ ] T048 [P] Create `backend/src/Muntada.Api/appsettings.Development.json` — Aspire service discovery (no hardcoded connection strings)
-- [ ] T049 [P] Create `backend/src/Muntada.Api/appsettings.Production.json` — K8s ConfigMap/Secret references
-- [ ] T050 Write integration test for health check endpoints in `backend/tests/Muntada.Integration.Tests/HealthCheckTests.cs`
-- [ ] T051 Verify backend starts via Aspire AppHost and health checks return 200
+- [x] T044 Create `Muntada.Api.csproj` at `backend/src/Muntada.Api/` referencing SharedKernel and Aspire ServiceDefaults
+- [x] T045 Create `backend/src/Muntada.Api/Program.cs` — register middleware (ErrorHandling), MassTransit, FluentValidation, Serilog, ServiceDefaults
+- [x] T046 Implement health check endpoints (`/health`, `/health/ready`, `/health/live`) per contract in `backend/src/Muntada.Api/` using ASP.NET Core health checks + ServiceDefaults
+- [x] T047 Create `backend/src/Muntada.Api/appsettings.json` — base config (no secrets)
+- [x] T048 [P] Create `backend/src/Muntada.Api/appsettings.Development.json` — Aspire service discovery (no hardcoded connection strings)
+- [x] T049 [P] Create `backend/src/Muntada.Api/appsettings.Production.json` — K8s ConfigMap/Secret references
+- [x] T050 Write integration test for health check endpoints in `backend/tests/Muntada.Integration.Tests/HealthCheckTests.cs`
+- [x] T051 Verify backend starts via Aspire AppHost and health checks return 200
 
 **Checkpoint**: Backend API running via Aspire, health endpoints operational, traces visible in Aspire Dashboard.
 

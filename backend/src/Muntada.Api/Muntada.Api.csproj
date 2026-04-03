@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\aspire\Muntada.ServiceDefaults\Muntada.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Muntada.SharedKernel\Muntada.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>
