@@ -5,6 +5,12 @@
 **Status**: Draft
 **Input**: Identity & Access Management module — registration, login (email+password, phone OTP), JWT/refresh token lifecycle, session management, guest magic links, Personal Access Tokens (PATs), and password reset. Foundation for all user-context-dependent modules.
 
+## Clarifications
+
+### Session 2026-04-03
+
+- Q: Can users register with phone number only, or is email+password the only registration path? → A: Phone OTP is login-only. Registration requires email+password. Phone number is optional profile data added after registration.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — User Registration & Email Verification (Priority: P1)
@@ -62,7 +68,7 @@ As a logged-in user, I want my session to persist without re-entering credential
 
 ### User Story 4 — Phone OTP Authentication (Priority: P1)
 
-As a user, I want to log in with my phone number using a one-time SMS code so that I can authenticate without a password (passwordless).
+As a registered user with a phone number on file, I want to log in using a one-time SMS code so that I can authenticate without entering my password (passwordless login for existing accounts only — phone OTP does not create new accounts).
 
 **Why this priority**: Passwordless login via OTP is a primary authentication method for the GCC market where phone-based auth is standard practice.
 
@@ -157,7 +163,7 @@ As a user who forgot their password, I want to reset it via email so that I can 
 
 **Authentication Methods**
 
-- **FR-005**: System MUST support two authentication methods: email+password and phone OTP. Each with independent flow and rate limiting.
+- **FR-005**: System MUST support two authentication methods: email+password and phone OTP. Registration requires email+password; phone OTP is login-only for existing accounts with a phone number on file. Each method has independent flow and rate limiting.
 - **FR-006**: Phone numbers MUST be validated as E.164 format. International country codes MUST be supported.
 - **FR-007**: OTP codes MUST be 6 digits, cryptographically random, expire after 15 minutes, with max 3 verification attempts per challenge.
 - **FR-008**: SMS delivery MUST be handled by a configured gateway with retry logic (max 3 retries, exponential backoff).
