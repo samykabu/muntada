@@ -19,8 +19,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet restore backend/Muntada.slnx
-      - run: dotnet build backend/Muntada.slnx --no-restore -warnaserror
+      - run: dotnet build backend/src/Muntada.Api/Muntada.Api.csproj -warnaserror
 
   backend-test:
     name: Backend Tests (xUnit)
@@ -30,8 +29,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet restore backend/Muntada.slnx
-      - run: dotnet test backend/tests/Muntada.SharedKernel.Tests/ --no-restore --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
+      - run: dotnet test backend/tests/Muntada.SharedKernel.Tests/ --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
       - uses: actions/upload-artifact@v4
         if: always()
         with:
