@@ -218,6 +218,33 @@ Note: A new refresh token is issued on each refresh (rotation). The previous tok
 
 ---
 
+### POST /api/v1/identity/auth/logout
+
+Logs out the current user by revoking the active session and clearing the refresh token cookie.
+
+**Authentication**: Required (Bearer token)
+
+**Request Body**: None
+
+**Response 204 No Content**
+
+**Response Headers**:
+```
+Set-Cookie: refresh_token=; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/identity/auth/refresh; Max-Age=0
+```
+
+**Side Effects**:
+- Current session marked as `Revoked`
+- Refresh token invalidated
+- `UserLoggedOutEvent` published
+
+**Error Responses**:
+| Status | Condition |
+|---|---|
+| 401 | Not authenticated |
+
+---
+
 ### GET /api/v1/identity/sessions
 
 Lists all sessions for the authenticated user.

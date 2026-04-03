@@ -17,7 +17,7 @@ This plan implements the Identity & Access Management module for Muntada: user r
 **Project Type**: Modular monolith module (Clean Architecture: Domain, Application, Infrastructure, Api layers)
 **Performance Goals**: Auth endpoints < 500ms p95, OTP SMS < 10 seconds, email delivery < 30 seconds
 **Constraints**: GCC data residency, Saudi PDPL 7-year audit retention, no user enumeration, bcrypt cost 12
-**Scale/Scope**: 8 entities, 7 user stories (4x P1, 3x P2), 23 functional requirements, ~15 API endpoints
+**Scale/Scope**: 8 entities, 7 user stories (4x P1, 3x P2), 23 functional requirements, ~18 API endpoints
 **Dev Orchestration**: .NET Aspire 13.2 (mandatory), Docker Compose (fallback)
 
 ## Constitution Check

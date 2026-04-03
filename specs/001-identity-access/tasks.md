@@ -149,7 +149,8 @@
 - [ ] T056 [US3] Create `RevokeSessionCommand` and handler in `backend/src/Modules/Identity/Application/Commands/RevokeSessionCommand.cs` — mark session Revoked, invalidate refresh token, publish SessionRevokedEvent
 - [ ] T057 [P] [US3] Create `RevokeAllOtherSessionsCommand` in `backend/src/Modules/Identity/Application/Commands/RevokeAllOtherSessionsCommand.cs`
 - [ ] T058 [P] [US3] Create `IdleSessionCleanupJob` in `backend/src/Modules/Identity/Application/BackgroundJobs/IdleSessionCleanupJob.cs` — expire sessions idle > 24 hours
-- [ ] T059 [US3] Create `SessionController` with POST `/api/v1/identity/auth/refresh`, GET `/api/v1/identity/sessions`, DELETE `/api/v1/identity/sessions/{id}`, DELETE `/api/v1/identity/sessions?exceptCurrent=true` in `backend/src/Modules/Identity/Api/Controllers/SessionController.cs`
+- [ ] T058b [US3] Create `LogoutCommand` and handler in `backend/src/Modules/Identity/Application/Commands/LogoutCommand.cs` — revoke current session, clear refresh token cookie, publish UserLoggedOutEvent
+- [ ] T059 [US3] Create `SessionController` with POST `/api/v1/identity/auth/refresh`, POST `/api/v1/identity/auth/logout`, GET `/api/v1/identity/sessions`, DELETE `/api/v1/identity/sessions/{id}`, DELETE `/api/v1/identity/sessions?exceptCurrent=true` in `backend/src/Modules/Identity/Api/Controllers/SessionController.cs`
 - [ ] T060 [P] [US3] Create DTOs: `SessionDto`, `RefreshTokenResponse` in `backend/src/Modules/Identity/Api/Dtos/`
 - [ ] T061 [P] [US3] Write unit tests for RefreshTokenCommandHandler, RevokeSessionCommandHandler in `backend/tests/Modules/Identity.Tests/Application/SessionTests.cs`
 - [ ] T062 [US3] Verify all US3 tests pass
@@ -255,12 +256,15 @@
 **Purpose**: Cross-cutting concerns: audit logging, security alerts, documentation
 
 - [ ] T105 Implement audit logging service in `backend/src/Modules/Identity/Application/Services/AuditLogService.cs` — structured Serilog logging for all auth events (FR-019, FR-022), no credentials in logs (FR-018)
+- [ ] T105b [P] Write unit test validating no credentials (passwords, tokens, OTP codes) leak into logs in `backend/tests/Modules/Identity.Tests/Application/AuditLogSanitizationTests.cs` — covers SC-009
 - [ ] T106 [P] Add OpenAPI/Swagger documentation annotations to all Identity API controllers
 - [ ] T107 [P] Create database migration instructions in `docs/runbooks/identity-migration.md` — NEVER AI-generated (Constitution X)
+- [ ] T107b Configure audit log retention policy (7-year retention per Saudi PDPL FR-022) — Serilog sink configuration or separate audit database with retention rules
+- [ ] T107c [P] Add performance benchmark for auth endpoints in `backend/tests/Modules/Identity.Tests/Infrastructure/AuthPerformanceTests.cs` — verify < 500ms p95 for register, login, refresh (SC-010)
 - [ ] T108 Run full test suite: `dotnet test` (backend) + Playwright E2E — all must pass
-- [ ] T109 Final validation: all 17 API endpoints responding correctly, audit logs flowing
+- [ ] T109 Final validation: all 18 API endpoints responding correctly (including logout), audit logs flowing, no credential leakage
 
-**Checkpoint**: Identity module complete. All tests pass. Audit logging operational.
+**Checkpoint**: Identity module complete. All tests pass. Audit logging operational. Performance validated.
 
 ---
 

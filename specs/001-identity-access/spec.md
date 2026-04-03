@@ -63,6 +63,7 @@ As a logged-in user, I want my session to persist without re-entering credential
 3. **Given** a user wants to revoke a session (e.g., lost device), **When** they revoke it, **Then** the session is invalidated immediately and the refresh token is rejected on next use.
 4. **Given** a user wants to revoke all other sessions, **When** they request it, **Then** all sessions except the current one are invalidated.
 5. **Given** a session has been idle for 24 hours, **When** the system performs cleanup, **Then** the session is automatically expired.
+6. **Given** a logged-in user wants to log out, **When** they request logout, **Then** the current session is revoked, the refresh token cookie is cleared, and a `UserLoggedOut` event is published.
 
 ---
 
