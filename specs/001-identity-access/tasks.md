@@ -38,14 +38,14 @@
 
 ### Value Objects
 
-- [ ] T007 [P] Implement `Email` value object in `backend/src/Modules/Identity/Domain/User/Email.cs` — lowercase normalization, RFC 5322 validation, XML docs
-- [ ] T008 [P] Implement `PasswordHash` value object in `backend/src/Modules/Identity/Domain/User/PasswordHash.cs` — bcrypt cost 12, Create/Verify methods, XML docs
-- [ ] T009 [P] Implement `PhoneNumber` value object in `backend/src/Modules/Identity/Domain/User/PhoneNumber.cs` — E.164 validation, XML docs
-- [ ] T010 [P] Implement `DeviceInfo` value object in `backend/src/Modules/Identity/Domain/Session/DeviceInfo.cs` — UserAgent, IpAddress, Country, XML docs
+- [x] T007 [P] Implement `Email` value object in `backend/src/Modules/Identity/Domain/User/Email.cs` — lowercase normalization, RFC 5322 validation, XML docs
+- [x] T008 [P] Implement `PasswordHash` value object in `backend/src/Modules/Identity/Domain/User/PasswordHash.cs` — bcrypt cost 12, Create/Verify methods, XML docs
+- [x] T009 [P] Implement `PhoneNumber` value object in `backend/src/Modules/Identity/Domain/User/PhoneNumber.cs` — E.164 validation, XML docs
+- [x] T010 [P] Implement `DeviceInfo` value object in `backend/src/Modules/Identity/Domain/Session/DeviceInfo.cs` — UserAgent, IpAddress, Country, XML docs
 
 ### Aggregates & Entities
 
-- [ ] T011 Implement `User` aggregate root in `backend/src/Modules/Identity/Domain/User/User.cs` — Id (usr_), Email, PasswordHash, PhoneNumber, Status enum (Unverified/Active/Suspended/Deleted), FullName, timestamps, XML docs
+- [x] T011 Implement `User` aggregate root in `backend/src/Modules/Identity/Domain/User/User.cs` — Id (usr_), Email, PasswordHash, PhoneNumber, Status enum (Unverified/Active/Suspended/Deleted), FullName, timestamps, XML docs
 - [ ] T012 [P] Implement `Session` aggregate root in `backend/src/Modules/Identity/Domain/Session/Session.cs` — Id (ses_), UserId, TenantId, Status enum (Active/Revoked/Expired), DeviceInfo, RefreshTokenId, timestamps, Revoke() method, XML docs
 - [ ] T013 [P] Implement `RefreshToken` entity in `backend/src/Modules/Identity/Domain/Session/RefreshToken.cs` — Id, SessionId, TokenHash, Status enum, IsValid() method, XML docs
 - [ ] T014 [P] Implement `OtpChallenge` aggregate in `backend/src/Modules/Identity/Domain/Otp/OtpChallenge.cs` — Id (otp_), PhoneNumber, CodeHash, Status enum (Pending/Verified/Expired), FailedAttempts, IsValid(), IncrementFailedAttempts(), XML docs
@@ -60,10 +60,10 @@
 
 ### Unit Tests for Domain
 
-- [ ] T020 [P] Write unit tests for `Email` value object in `backend/tests/Modules/Identity.Tests/Domain/EmailTests.cs`
-- [ ] T021 [P] Write unit tests for `PasswordHash` value object in `backend/tests/Modules/Identity.Tests/Domain/PasswordHashTests.cs`
-- [ ] T022 [P] Write unit tests for `PhoneNumber` value object in `backend/tests/Modules/Identity.Tests/Domain/PhoneNumberTests.cs`
-- [ ] T023 [P] Write unit tests for `User` aggregate (state transitions, validation) in `backend/tests/Modules/Identity.Tests/Domain/UserTests.cs`
+- [x] T020 [P] Write unit tests for `Email` value object in `backend/tests/Modules/Identity.Tests/Domain/EmailTests.cs`
+- [x] T021 [P] Write unit tests for `PasswordHash` value object in `backend/tests/Modules/Identity.Tests/Domain/PasswordHashTests.cs`
+- [x] T022 [P] Write unit tests for `PhoneNumber` value object in `backend/tests/Modules/Identity.Tests/Domain/PhoneNumberTests.cs`
+- [x] T023 [P] Write unit tests for `User` aggregate (state transitions, validation) in `backend/tests/Modules/Identity.Tests/Domain/UserTests.cs`
 - [ ] T024 [P] Write unit tests for `Session` aggregate (revoke, expiry) in `backend/tests/Modules/Identity.Tests/Domain/SessionTests.cs`
 - [ ] T025 [P] Write unit tests for `OtpChallenge` (attempts, expiry, locking) in `backend/tests/Modules/Identity.Tests/Domain/OtpChallengeTests.cs`
 - [ ] T026 Verify all domain unit tests pass: `dotnet test backend/tests/Modules/Identity.Tests/`
