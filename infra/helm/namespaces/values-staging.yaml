@@ -1,0 +1,9 @@
+namespace: muntada-staging
+environment: staging
+
+quota:
+  requestsCpu: "8"
+  requestsMemory: "16Gi"
+  limitsCpu: "16"
+  limitsMemory: "32Gi"
+  pods: "100"

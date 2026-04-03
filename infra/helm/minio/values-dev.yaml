@@ -1,0 +1,21 @@
+replicas: 1
+
+image:
+  repository: minio/minio
+  tag: latest
+
+auth:
+  rootUser: muntada-dev
+  rootPassword: dev-minio-password
+
+storage:
+  storageClass: standard
+  size: 10Gi
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1"
+    memory: "1Gi"

@@ -1,0 +1,4 @@
+apiVersion: v2
+name: muntada-sql-server
+description: SQL Server 2022 StatefulSet for Muntada platform
+version: 0.1.0

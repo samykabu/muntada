@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-livekit
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceName: {{ .Release.Name }}-livekit
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: livekit
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: livekit
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: livekit
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 7880
+              name: http
+            - containerPort: 7881
+              name: rtc-tcp
+            - containerPort: 7882
+              name: rtc-udp
+              protocol: UDP
+          env:
+            - name: LIVEKIT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-livekit-secret
+                  key: api-key
+            - name: LIVEKIT_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-livekit-secret
+                  key: api-secret
+            - name: LIVEKIT_CONFIG
+              value: |
+                port: 7880
+                rtc:
+                  tcp_port: 7881
+                  udp_port: 7882
+                  use_external_ip: false
+                redis:
+                  address: {{ .Values.redis.address }}
+                logging:
+                  level: {{ .Values.logLevel }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}

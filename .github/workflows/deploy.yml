@@ -1,0 +1,54 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set namespace
+        id: ns
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            echo "namespace=muntada-prod" >> $GITHUB_OUTPUT
+          else
+            echo "namespace=muntada-staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.0
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Deploy via Helm
+        run: |
+          helm upgrade --install muntada infra/helm/muntada/ \
+            --namespace ${{ steps.ns.outputs.namespace }} \
+            --values infra/helm/muntada/values.yaml \
+            --set api.image.tag=${{ github.sha }} \
+            --set frontend.image.tag=${{ github.sha }} \
+            --wait --timeout 5m
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/muntada-api -n ${{ steps.ns.outputs.namespace }} --timeout=300s
+          kubectl rollout status deployment/muntada-frontend -n ${{ steps.ns.outputs.namespace }} --timeout=300s

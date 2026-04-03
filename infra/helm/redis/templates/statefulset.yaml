@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-redis
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceName: {{ .Release.Name }}-redis
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: redis
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: redis
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["redis-server", "/etc/redis/redis.conf"]
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis
+            - name: redis-data
+              mountPath: /data
+        {{- if .Values.sentinel.enabled }}
+        - name: sentinel
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["redis-sentinel", "/etc/redis/sentinel.conf"]
+          ports:
+            - containerPort: 26379
+              name: sentinel
+        {{- end }}
+      volumes:
+        - name: redis-config
+          configMap:
+            name: {{ .Release.Name }}-redis-config
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.storage.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.storage.size }}

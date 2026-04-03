@@ -1,0 +1,27 @@
+replicas: 1
+
+image:
+  repository: redis
+  tag: "7-alpine"
+
+maxMemory: "256mb"
+maxMemoryPolicy: allkeys-lru
+appendOnly: "yes"
+
+sentinel:
+  enabled: false
+  quorum: 2
+  downAfterMs: 5000
+  failoverTimeoutMs: 10000
+
+storage:
+  storageClass: standard
+  size: 2Gi
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"

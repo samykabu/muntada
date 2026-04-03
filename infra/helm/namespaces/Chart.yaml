@@ -1,0 +1,4 @@
+apiVersion: v2
+name: muntada-namespaces
+description: Kubernetes namespaces, RBAC, network policies, and resource quotas for Muntada
+version: 0.1.0

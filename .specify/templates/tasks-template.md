@@ -258,3 +258,4 @@ With multiple developers:
 - **Code Review**: Run code review before submitting any PR. Fix all findings first.
 - **Phase Summary**: Include a detailed summary of all implemented tasks when the phase is completed.
 - **Database Migrations**: NEVER generate migrations via AI — use `dotnet ef migrations add` only.
+- **Aspire AppHost**: Every new module MUST register itself in the Aspire AppHost project. Local dev runs via `dotnet run --project aspire/Muntada.AppHost`.
