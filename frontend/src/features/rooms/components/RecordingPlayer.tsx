@@ -4,8 +4,6 @@ import type { RecordingResponse, Transcript } from '../api/roomsApi';
 interface RecordingPlayerProps {
   /** The recording to play. */
   recording: RecordingResponse;
-  /** Base URL for constructing playback and download URLs (e.g., MinIO presigned URL root). */
-  mediaBaseUrl: string;
 }
 
 /** Formats seconds into HH:MM:SS or MM:SS. */
@@ -32,12 +30,12 @@ const TRANSCRIPT_STATUS_LABELS: Record<string, string> = {
 };
 
 /** Audio/video player for recordings with transcript viewer. */
-export function RecordingPlayer({ recording, mediaBaseUrl }: RecordingPlayerProps) {
+export function RecordingPlayer({ recording }: RecordingPlayerProps) {
   const [activeTranscript, setActiveTranscript] = useState<Transcript | null>(
     recording.transcripts.find((t) => t.status === 'Ready') ?? null,
   );
 
-  const playbackUrl = `${mediaBaseUrl}/${recording.s3Path}`;
+  const playbackUrl = recording.downloadUrl;
 
   return (
     <div>
@@ -68,7 +66,7 @@ export function RecordingPlayer({ recording, mediaBaseUrl }: RecordingPlayerProp
       </div>
 
       {/* Player */}
-      {recording.status === 'Ready' ? (
+      {recording.status === 'Ready' && playbackUrl ? (
         <div style={{ marginBottom: '1rem' }}>
           {/* Use <audio> for simplicity; could be <video> if the recording has video tracks. */}
           <audio controls style={{ width: '100%' }} src={playbackUrl}>
@@ -77,6 +75,8 @@ export function RecordingPlayer({ recording, mediaBaseUrl }: RecordingPlayerProp
         </div>
       ) : recording.status === 'Processing' ? (
         <p style={{ color: '#f59e0b', fontStyle: 'italic' }}>Recording is still being processed...</p>
+      ) : recording.status === 'Ready' && !playbackUrl ? (
+        <p style={{ color: '#6b7280' }}>Download URL not yet available.</p>
       ) : (
         <p style={{ color: '#ef4444' }}>Recording failed to process.</p>
       )}
@@ -115,15 +115,18 @@ export function RecordingPlayer({ recording, mediaBaseUrl }: RecordingPlayerProp
                 Language: {activeTranscript.language.toUpperCase()}
               </p>
               <p style={{ fontSize: '0.875rem', color: '#374151', margin: 0 }}>
-                Transcript content is loaded from:{' '}
-                <a
-                  href={`${mediaBaseUrl}/${activeTranscript.textS3Path}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: '#3b82f6' }}
-                >
-                  View full transcript
-                </a>
+                {activeTranscript.textDownloadUrl ? (
+                  <a
+                    href={activeTranscript.textDownloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#3b82f6' }}
+                  >
+                    View full transcript
+                  </a>
+                ) : (
+                  <span style={{ color: '#9ca3af' }}>Transcript download URL not available.</span>
+                )}
               </p>
             </div>
           )}

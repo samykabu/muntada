@@ -115,7 +115,7 @@ export function LiveRoomPage() {
       >
         <div style={{ padding: '0.75rem', border: '1px solid #e5e7eb', borderRadius: 4 }}>
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: 4 }}>Moderator</div>
-          <div style={{ fontWeight: 500 }}>{occurrence.moderatorAssignment.userId}</div>
+          <div style={{ fontWeight: 500 }}>{occurrence.moderator?.displayName ?? occurrence.moderator?.userId ?? 'Unassigned'}</div>
         </div>
         <div style={{ padding: '0.75rem', border: '1px solid #e5e7eb', borderRadius: 4 }}>
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: 4 }}>Max Participants</div>

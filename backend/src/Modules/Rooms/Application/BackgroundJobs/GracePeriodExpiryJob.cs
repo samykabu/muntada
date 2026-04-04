@@ -58,7 +58,7 @@ public sealed class GracePeriodExpiryJob : IConsumer<GracePeriodExpiredMessage>
                 "Room {OccurrenceId} ended after grace period expiry.",
                 message.OccurrenceId);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             // If the room is no longer in Grace (moderator reconnected), the transition
             // will fail. This is expected and should not be treated as an error.

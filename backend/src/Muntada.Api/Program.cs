@@ -41,6 +41,17 @@ builder.Services.AddScoped<IFeatureToggleService, FeatureToggleService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddMemoryCache();
 
+// Register Rooms application services
+builder.Services.AddScoped<Muntada.Rooms.Application.Services.IRecurrenceService, Muntada.Rooms.Infrastructure.Services.RecurrenceService>();
+builder.Services.AddScoped<Muntada.Rooms.Application.Services.IGracePeriodService, Muntada.Rooms.Infrastructure.Services.GracePeriodService>();
+builder.Services.AddScoped<Muntada.Rooms.Application.Services.IRecordingService, Muntada.Rooms.Infrastructure.Services.MinIoRecordingService>();
+builder.Services.AddScoped<Muntada.Rooms.Application.Services.ITranscriptionService, Muntada.Rooms.Infrastructure.Services.TranscriptionService>();
+builder.Services.AddSingleton<Muntada.Rooms.Infrastructure.Cache.ParticipantStateCache>();
+
+// Register Rooms background jobs
+builder.Services.AddHostedService<Muntada.Rooms.Application.BackgroundJobs.OccurrenceGenerationJob>();
+builder.Services.AddHostedService<Muntada.Rooms.Application.BackgroundJobs.RetentionCleanupJob>();
+
 // Register SignalR for real-time room participant updates
 builder.Services.AddSignalR();
 

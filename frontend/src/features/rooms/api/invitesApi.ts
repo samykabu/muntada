@@ -32,12 +32,15 @@ export interface JoinRoomRequest {
   tenantId: string;
   occurrenceId: string;
   inviteToken: string;
+  displayName: string;
 }
 
 export interface JoinRoomResponse {
   participantId: string;
-  roomOccurrenceId: string;
-  joinUrl: string;
+  occurrenceId: string;
+  displayName: string;
+  role: string;
+  status: string;
 }
 
 export interface PaginatedInvites {
@@ -89,8 +92,8 @@ export const invitesApi = baseApi.injectEndpoints({
       inviteId: string;
     }>({
       query: ({ tenantId, occurrenceId, inviteId }) => ({
-        url: `/api/v1/tenants/${tenantId}/room-occurrences/${occurrenceId}/invites/${inviteId}/revoke`,
-        method: 'POST',
+        url: `/api/v1/tenants/${tenantId}/room-occurrences/${occurrenceId}/invites/${inviteId}`,
+        method: 'DELETE',
       }),
       invalidatesTags: (_result, _error, { occurrenceId, inviteId }) => [
         { type: 'RoomInvite', id: inviteId },
@@ -99,10 +102,10 @@ export const invitesApi = baseApi.injectEndpoints({
     }),
 
     joinRoom: builder.mutation<JoinRoomResponse, JoinRoomRequest>({
-      query: ({ tenantId, occurrenceId, inviteToken }) => ({
-        url: `/api/v1/tenants/${tenantId}/room-occurrences/${occurrenceId}/join`,
+      query: ({ tenantId, occurrenceId, inviteToken, displayName }) => ({
+        url: `/api/v1/tenants/${tenantId}/room-occurrences/${occurrenceId}/invites/join`,
         method: 'POST',
-        body: { inviteToken },
+        body: { token: inviteToken, displayName },
       }),
       invalidatesTags: (_result, _error, { occurrenceId }) => [
         { type: 'RoomOccurrence', id: occurrenceId },

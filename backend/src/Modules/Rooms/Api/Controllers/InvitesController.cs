@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Muntada.Rooms.Api.Dtos;
+using Muntada.Rooms.Api.Extensions;
 using Muntada.Rooms.Api.Filters;
 using Muntada.Rooms.Application.Commands;
 using Muntada.Rooms.Application.Queries;
@@ -47,14 +48,16 @@ public class InvitesController : ControllerBase
         [FromBody] CreateRoomInvitesRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetCurrentUserId();
 
-        var inviteRequests = request.Invites
-            .Select(i => new InviteRequest(
-                i.Email,
-                i.UserId,
-                Enum.Parse<RoomInviteType>(i.InviteType, ignoreCase: true)))
-            .ToList();
+        var inviteRequests = new List<InviteRequest>();
+        foreach (var i in request.Invites)
+        {
+            if (!Enum.TryParse<RoomInviteType>(i.InviteType, ignoreCase: true, out var inviteType))
+                return BadRequest($"Invalid invite type: '{i.InviteType}'.");
+
+            inviteRequests.Add(new InviteRequest(i.Email, i.UserId, inviteType));
+        }
 
         var command = new GenerateRoomInviteCommand(
             occurrenceId,
@@ -137,7 +140,8 @@ public class InvitesController : ControllerBase
             occurrenceId,
             request.Token,
             request.UserId,
-            request.DisplayName);
+            request.DisplayName,
+            tenantId);
 
         var result = await _sender.Send(command, cancellationToken);
 
@@ -166,10 +170,4 @@ public class InvitesController : ControllerBase
             invite.ExpiresAt);
     }
 
-    private string GetCurrentUserId()
-    {
-        return User?.FindFirst("sub")?.Value
-            ?? User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? "anonymous";
-    }
 }

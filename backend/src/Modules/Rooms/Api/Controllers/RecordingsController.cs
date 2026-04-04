@@ -1,13 +1,11 @@
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Muntada.Rooms.Api.Dtos;
 using Muntada.Rooms.Api.Filters;
+using Muntada.Rooms.Application.Queries;
 using Muntada.Rooms.Application.Services;
-using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Domain.Recording;
-using Muntada.Rooms.Infrastructure;
 using Muntada.SharedKernel.Domain.Exceptions;
 
 namespace Muntada.Rooms.Api.Controllers;
@@ -21,16 +19,14 @@ namespace Muntada.Rooms.Api.Controllers;
 public class RecordingsController : ControllerBase
 {
     private readonly ISender _sender;
-    private readonly RoomsDbContext _db;
     private readonly IRecordingService _recordingService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RecordingsController"/> class.
     /// </summary>
-    public RecordingsController(ISender sender, RoomsDbContext db, IRecordingService recordingService)
+    public RecordingsController(ISender sender, IRecordingService recordingService)
     {
         _sender = sender;
-        _db = db;
         _recordingService = recordingService;
     }
 
@@ -50,13 +46,8 @@ public class RecordingsController : ControllerBase
         [FromRoute] string occurrenceId,
         CancellationToken cancellationToken)
     {
-        var roomOccurrenceId = new RoomOccurrenceId(occurrenceId);
-
-        var recording = await _db.Recordings
-            .AsNoTracking()
-            .Where(r => r.RoomOccurrenceId == roomOccurrenceId && r.TenantId == tenantId)
-            .OrderByDescending(r => r.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
+        var query = new GetRecordingQuery(tenantId, occurrenceId);
+        var recording = await _sender.Send(query, cancellationToken);
 
         if (recording is null)
             throw new EntityNotFoundException(nameof(Recording), $"recording for occurrence {occurrenceId}");

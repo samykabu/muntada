@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Domain.Participant;
 using StackExchange.Redis;
@@ -12,6 +13,9 @@ namespace Muntada.Rooms.Infrastructure.Cache;
 public class ParticipantStateCache
 {
     private readonly IConnectionMultiplexer _redis;
+
+    /// <summary>TTL for participant hash keys (2 hours).</summary>
+    private static readonly TimeSpan KeyTtl = TimeSpan.FromHours(2);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ParticipantStateCache"/> class.
@@ -39,8 +43,10 @@ public class ParticipantStateCache
     {
         var db = _redis.GetDatabase();
         var key = GetKey(occurrenceId);
-        var value = $"{userId ?? "guest"}|{displayName}|{role}|Muted|Off|{DateTimeOffset.UtcNow:o}";
+        var entry = new ParticipantCacheEntry(userId, displayName, role.ToString(), "Muted", "Off", DateTimeOffset.UtcNow);
+        var value = JsonSerializer.Serialize(entry);
         await db.HashSetAsync(key, participantId, value);
+        await db.KeyExpireAsync(key, KeyTtl);
     }
 
     /// <summary>
@@ -69,17 +75,17 @@ public class ParticipantStateCache
         var participants = new List<CachedParticipant>();
         foreach (var entry in entries)
         {
-            var parts = entry.Value.ToString().Split('|');
-            if (parts.Length >= 6)
+            var cached = JsonSerializer.Deserialize<ParticipantCacheEntry>(entry.Value.ToString());
+            if (cached is not null)
             {
                 participants.Add(new CachedParticipant(
                     ParticipantId: entry.Name.ToString(),
-                    UserId: parts[0] == "guest" ? null : parts[0],
-                    DisplayName: parts[1],
-                    Role: Enum.TryParse<ParticipantRole>(parts[2], out var role) ? role : ParticipantRole.Member,
-                    AudioState: Enum.TryParse<MediaState>(parts[3], out var audio) ? audio : MediaState.Muted,
-                    VideoState: Enum.TryParse<MediaState>(parts[4], out var video) ? video : MediaState.Off,
-                    JoinedAt: DateTimeOffset.TryParse(parts[5], out var joinedAt) ? joinedAt : DateTimeOffset.UtcNow));
+                    UserId: cached.UserId,
+                    DisplayName: cached.DisplayName,
+                    Role: Enum.TryParse<ParticipantRole>(cached.Role, out var role) ? role : ParticipantRole.Member,
+                    AudioState: Enum.TryParse<MediaState>(cached.AudioState, out var audio) ? audio : MediaState.Muted,
+                    VideoState: Enum.TryParse<MediaState>(cached.VideoState, out var video) ? video : MediaState.Off,
+                    JoinedAt: cached.JoinedAt));
             }
         }
 
@@ -105,18 +111,29 @@ public class ParticipantStateCache
 
         if (existing.HasValue)
         {
-            var parts = existing.ToString().Split('|');
-            if (parts.Length >= 6)
+            var cached = JsonSerializer.Deserialize<ParticipantCacheEntry>(existing.ToString());
+            if (cached is not null)
             {
-                parts[3] = audioState.ToString();
-                parts[4] = videoState.ToString();
-                await db.HashSetAsync(key, participantId, string.Join('|', parts));
+                var updated = cached with { AudioState = audioState.ToString(), VideoState = videoState.ToString() };
+                await db.HashSetAsync(key, participantId, JsonSerializer.Serialize(updated));
+                await db.KeyExpireAsync(key, KeyTtl);
             }
         }
     }
 
     private static string GetKey(string occurrenceId) => $"room:{occurrenceId}:participants";
 }
+
+/// <summary>
+/// JSON-serializable entry stored in Redis for each participant.
+/// </summary>
+internal sealed record ParticipantCacheEntry(
+    string? UserId,
+    string DisplayName,
+    string Role,
+    string AudioState,
+    string VideoState,
+    DateTimeOffset JoinedAt);
 
 /// <summary>
 /// Represents a participant entry cached in Redis.

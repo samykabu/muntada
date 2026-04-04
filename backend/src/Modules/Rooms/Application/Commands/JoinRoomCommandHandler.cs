@@ -16,11 +16,13 @@ namespace Muntada.Rooms.Application.Commands;
 /// <param name="Token">The invite token for validation.</param>
 /// <param name="UserId">The authenticated user ID, or null for guests.</param>
 /// <param name="DisplayName">Display name for the participant.</param>
+/// <param name="TenantId">The tenant identifier for cross-tenant enforcement.</param>
 public sealed record JoinRoomCommand(
     string OccurrenceId,
     string Token,
     string? UserId,
-    string? DisplayName) : IRequest<JoinRoomResult>;
+    string? DisplayName,
+    string? TenantId = null) : IRequest<JoinRoomResult>;
 
 /// <summary>
 /// Result returned after successfully joining a room.
@@ -71,6 +73,10 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Jo
 
         if (occurrence is null)
             throw new EntityNotFoundException(nameof(RoomOccurrence), request.OccurrenceId);
+
+        // Enforce tenantId — ensure the caller's tenant matches the occurrence
+        if (request.TenantId is not null && occurrence.TenantId != request.TenantId)
+            throw new ValidationException("TenantId", "Occurrence does not belong to the expected tenant.");
 
         // Validate room state
         if (occurrence.Status != RoomOccurrenceStatus.Scheduled && occurrence.Status != RoomOccurrenceStatus.Live)

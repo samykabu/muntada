@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Muntada.Rooms.Api.Dtos;
+using Muntada.Rooms.Api.Extensions;
 using Muntada.Rooms.Api.Filters;
 using Muntada.Rooms.Application.Commands;
 using Muntada.Rooms.Application.Queries;
@@ -44,7 +45,7 @@ public class TemplatesController : ControllerBase
         [FromBody] CreateRoomTemplateRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetCurrentUserId();
 
         var command = new CreateRoomTemplateCommand(
             tenantId,
@@ -152,10 +153,4 @@ public class TemplatesController : ControllerBase
             template.UpdatedAt);
     }
 
-    private string GetCurrentUserId()
-    {
-        return User?.FindFirst("sub")?.Value
-            ?? User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? "anonymous";
-    }
 }

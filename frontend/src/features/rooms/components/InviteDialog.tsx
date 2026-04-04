@@ -57,8 +57,9 @@ export function InviteDialog({
       await navigator.clipboard.writeText(joinLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API may not be available
+    } catch (err) {
+      console.error('Failed to copy link to clipboard:', err);
+      alert('Failed to copy link. Please copy it manually.');
     }
   };
 
@@ -67,8 +68,9 @@ export function InviteDialog({
       await navigator.clipboard.writeText(guestLink);
       setGuestLinkCopied(true);
       setTimeout(() => setGuestLinkCopied(false), 2000);
-    } catch {
-      // Clipboard API may not be available
+    } catch (err) {
+      console.error('Failed to copy guest link to clipboard:', err);
+      alert('Failed to copy guest link. Please copy it manually.');
     }
   };
 

@@ -45,7 +45,7 @@ public class ParticipantsController : ControllerBase
         var query = new ListParticipantsQuery(occurrenceId, tenantId);
         var participants = await _sender.Send(query, cancellationToken);
 
-        var response = participants.Select(p => new ParticipantResponse(
+        var items = participants.Select(p => new ParticipantResponse(
             p.ParticipantId,
             p.UserId,
             p.DisplayName,
@@ -55,7 +55,7 @@ public class ParticipantsController : ControllerBase
             p.JoinedAt,
             p.LeftAt)).ToList();
 
-        return Ok(response);
+        return Ok(new { participants = items, totalCount = items.Count });
     }
 
     /// <summary>

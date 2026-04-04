@@ -39,7 +39,8 @@ public sealed record CreateRoomOccurrenceRequest(
     string OrganizerTimeZoneId,
     string ModeratorUserId,
     RoomSettingsDto Settings,
-    int GracePeriodSeconds = 300);
+    int GracePeriodSeconds = 300,
+    string? TemplateId = null);
 
 /// <summary>
 /// Request DTO for updating a room occurrence (single-occurrence override).

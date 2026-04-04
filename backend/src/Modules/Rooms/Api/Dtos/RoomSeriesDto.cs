@@ -35,4 +35,4 @@ public sealed record CreateRoomSeriesRequest(
 public sealed record UpdateRoomSeriesRequest(
     string? RecurrenceRule,
     DateTimeOffset? EndsAt,
-    string ModeratorUserId);
+    string? ModeratorUserId);

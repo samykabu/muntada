@@ -21,8 +21,9 @@ export interface RoomSettings {
   autoStartRecording: boolean;
 }
 
-export interface ModeratorAssignment {
+export interface ModeratorInfo {
   userId: string;
+  displayName?: string;
   assignedAt: string;
   disconnectedAt?: string;
 }
@@ -31,6 +32,8 @@ export interface Transcript {
   language: string;
   s3Path: string;
   textS3Path: string;
+  downloadUrl?: string;
+  textDownloadUrl?: string;
   status: TranscriptStatus;
   createdAt: string;
 }
@@ -58,7 +61,7 @@ export interface RoomOccurrenceResponse {
   liveStartedAt?: string;
   liveEndedAt?: string;
   status: RoomOccurrenceStatus;
-  moderatorAssignment: ModeratorAssignment;
+  moderator: ModeratorInfo | null;
   settings: RoomSettings;
   gracePeriodSeconds: number;
   graceStartedAt?: string;
@@ -99,6 +102,8 @@ export interface RecordingResponse {
   roomOccurrenceId: string;
   tenantId: string;
   s3Path: string;
+  downloadUrl?: string;
+  liveKitEgressId?: string;
   fileSizeBytes: number;
   durationSeconds: number;
   status: RecordingStatus;
@@ -136,11 +141,11 @@ export interface UpdateTemplateRequest {
 }
 
 export interface CreateOccurrenceRequest {
-  templateId: string;
   title: string;
   scheduledAt: string;
   organizerTimeZoneId: string;
   moderatorUserId: string;
+  templateId?: string;
   settings?: Partial<RoomSettings>;
   gracePeriodSeconds?: number;
 }
@@ -196,6 +201,7 @@ interface OccurrenceListParams extends TenantScope, PaginationParams {
   status?: RoomOccurrenceStatus;
   from?: string;
   to?: string;
+  seriesId?: string;
 }
 
 interface SeriesListParams extends TenantScope, PaginationParams {
@@ -252,9 +258,9 @@ export const roomsApi = baseApi.injectEndpoints({
 
     // ── Occurrences ─────────────────────────────────────────────────────
     getOccurrences: builder.query<PaginatedResponse<RoomOccurrenceResponse>, OccurrenceListParams>({
-      query: ({ tenantId, page = 1, pageSize = 20, status, from, to }) => ({
+      query: ({ tenantId, page = 1, pageSize = 20, status, from, to, seriesId }) => ({
         url: `/api/v1/tenants/${tenantId}/room-occurrences`,
-        params: { page, pageSize, status, from, to },
+        params: { page, pageSize, status, from, to, seriesId },
       }),
       providesTags: (result) =>
         result

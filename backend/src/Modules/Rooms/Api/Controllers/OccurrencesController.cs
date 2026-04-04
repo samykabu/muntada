@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Muntada.Rooms.Api.Dtos;
+using Muntada.Rooms.Api.Extensions;
 using Muntada.Rooms.Api.Filters;
 using Muntada.Rooms.Application.Commands;
 using Muntada.Rooms.Application.Queries;
@@ -46,7 +47,7 @@ public class OccurrencesController : ControllerBase
         [FromBody] CreateRoomOccurrenceRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = User.GetCurrentUserId();
 
         var command = new CreateRoomOccurrenceCommand(
             tenantId,
@@ -94,8 +95,8 @@ public class OccurrencesController : ControllerBase
     [ProducesResponseType(typeof(PagedResponse<RoomOccurrenceResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListOccurrences(
         [FromRoute] string tenantId,
-        [FromQuery] DateTimeOffset? fromDate = null,
-        [FromQuery] DateTimeOffset? toDate = null,
+        [FromQuery(Name = "from")] DateTimeOffset? fromDate = null,
+        [FromQuery(Name = "to")] DateTimeOffset? toDate = null,
         [FromQuery] RoomOccurrenceStatus? status = null,
         [FromQuery] string? seriesId = null,
         [FromQuery] int page = 1,
@@ -229,10 +230,4 @@ public class OccurrencesController : ControllerBase
             occurrence.UpdatedAt);
     }
 
-    private string GetCurrentUserId()
-    {
-        return User?.FindFirst("sub")?.Value
-            ?? User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? "anonymous";
-    }
 }

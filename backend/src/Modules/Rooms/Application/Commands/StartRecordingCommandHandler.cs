@@ -74,7 +74,7 @@ public sealed class StartRecordingCommandHandler : IRequestHandler<StartRecordin
                 "A recording is already in progress for this room occurrence.");
 
         // Generate S3 path
-        var s3Path = $"{request.TenantId}/{request.OccurrenceId}/{DateTimeOffset.UtcNow:yyyyMMddHHmmss}.webm";
+        var s3Path = $"{request.TenantId}/{request.OccurrenceId}/{Guid.NewGuid():N}/{DateTimeOffset.UtcNow:yyyyMMddHHmmss}.webm";
 
         // Start egress via recording service
         var egressId = await _recordingService.StartRecordingAsync(

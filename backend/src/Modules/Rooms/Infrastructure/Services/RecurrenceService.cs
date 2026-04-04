@@ -22,11 +22,15 @@ public sealed class RecurrenceService : IRecurrenceService
             ? endsAt.Value
             : generateUntil;
 
+        // Resolve IANA timezone for DST-correct expansion
+        var tz = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        var localStart = TimeZoneInfo.ConvertTimeFromUtc(startsAt.UtcDateTime, tz);
+
         // Build an iCal event with the RRULE to use Ical.Net's recurrence evaluation
         var calendarEvent = new CalendarEvent
         {
-            DtStart = new CalDateTime(startsAt.UtcDateTime, "UTC"),
-            DtEnd = new CalDateTime(startsAt.UtcDateTime.AddHours(1), "UTC"),
+            DtStart = new CalDateTime(localStart, timeZoneId),
+            DtEnd = new CalDateTime(localStart.AddHours(1), timeZoneId),
         };
 
         // Parse and attach the recurrence rule
@@ -34,14 +38,16 @@ public sealed class RecurrenceService : IRecurrenceService
         calendarEvent.RecurrenceRules.Add(recurrencePattern);
 
         // Get occurrences within the date range
-        var searchStart = new CalDateTime(startsAt.UtcDateTime, "UTC");
-        var searchEnd = new CalDateTime(effectiveEnd.UtcDateTime, "UTC");
+        var searchStart = new CalDateTime(localStart, timeZoneId);
+        var searchEnd = new CalDateTime(TimeZoneInfo.ConvertTimeFromUtc(effectiveEnd.UtcDateTime, tz), timeZoneId);
         var occurrences = calendarEvent.GetOccurrences(searchStart, searchEnd);
 
         var result = new List<DateTimeOffset>();
         foreach (var occurrence in occurrences)
         {
-            var utcDate = new DateTimeOffset(occurrence.Period.StartTime.Value, TimeSpan.Zero);
+            var localDt = occurrence.Period.StartTime.Value;
+            var utcDt = TimeZoneInfo.ConvertTimeToUtc(localDt, tz);
+            var utcDate = new DateTimeOffset(utcDt, TimeSpan.Zero);
             if (utcDate >= startsAt)
             {
                 result.Add(utcDate);

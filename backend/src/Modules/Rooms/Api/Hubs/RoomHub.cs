@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using Muntada.Rooms.Api.Dtos;
 
 namespace Muntada.Rooms.Api.Hubs;
 
@@ -43,8 +44,9 @@ public class RoomHub : Hub
         string displayName,
         string role)
     {
+        var payload = new ParticipantJoinedPayload(participantId, displayName, role);
         await hubContext.Clients.Group(GetGroupName(occurrenceId))
-            .SendAsync("ParticipantJoined", new { participantId, displayName, role });
+            .SendAsync("ParticipantJoined", payload);
     }
 
     /// <summary>
@@ -53,13 +55,18 @@ public class RoomHub : Hub
     /// <param name="hubContext">The hub context for broadcasting.</param>
     /// <param name="occurrenceId">The room occurrence identifier.</param>
     /// <param name="participantId">The participant state identifier.</param>
+    /// <param name="userId">The user ID of the participant who left, or null for guests.</param>
+    /// <param name="leftAt">The timestamp when the participant left.</param>
     public static async Task BroadcastParticipantLeft(
         IHubContext<RoomHub> hubContext,
         string occurrenceId,
-        string participantId)
+        string participantId,
+        string? userId = null,
+        DateTimeOffset? leftAt = null)
     {
+        var payload = new ParticipantLeftPayload(participantId, userId, leftAt ?? DateTimeOffset.UtcNow);
         await hubContext.Clients.Group(GetGroupName(occurrenceId))
-            .SendAsync("ParticipantLeft", new { participantId });
+            .SendAsync("ParticipantLeft", payload);
     }
 
     /// <summary>
@@ -77,8 +84,9 @@ public class RoomHub : Hub
         string audioState,
         string videoState)
     {
+        var payload = new ParticipantMediaChangedPayload(participantId, audioState, videoState);
         await hubContext.Clients.Group(GetGroupName(occurrenceId))
-            .SendAsync("ParticipantMediaChanged", new { participantId, audioState, videoState });
+            .SendAsync("ParticipantMediaChanged", payload);
     }
 
     /// <summary>
@@ -86,16 +94,19 @@ public class RoomHub : Hub
     /// </summary>
     /// <param name="hubContext">The hub context for broadcasting.</param>
     /// <param name="occurrenceId">The room occurrence identifier.</param>
-    /// <param name="previousStatus">The previous room status.</param>
-    /// <param name="newStatus">The new room status.</param>
+    /// <param name="status">The new room status.</param>
+    /// <param name="graceStartedAt">When the grace period started, if applicable.</param>
+    /// <param name="graceExpiresAt">When the grace period expires, if applicable.</param>
     public static async Task BroadcastRoomStatusChanged(
         IHubContext<RoomHub> hubContext,
         string occurrenceId,
-        string previousStatus,
-        string newStatus)
+        string status,
+        DateTimeOffset? graceStartedAt = null,
+        DateTimeOffset? graceExpiresAt = null)
     {
+        var payload = new RoomStatusChangedPayload(occurrenceId, status, graceStartedAt, graceExpiresAt);
         await hubContext.Clients.Group(GetGroupName(occurrenceId))
-            .SendAsync("RoomStatusChanged", new { occurrenceId, previousStatus, newStatus });
+            .SendAsync("RoomStatusChanged", payload);
     }
 
     /// <summary>
@@ -104,13 +115,16 @@ public class RoomHub : Hub
     /// <param name="hubContext">The hub context for broadcasting.</param>
     /// <param name="occurrenceId">The room occurrence identifier.</param>
     /// <param name="newModeratorUserId">The user ID of the new moderator.</param>
+    /// <param name="newModeratorName">The display name of the new moderator.</param>
     public static async Task BroadcastModeratorChanged(
         IHubContext<RoomHub> hubContext,
         string occurrenceId,
-        string newModeratorUserId)
+        string newModeratorUserId,
+        string newModeratorName = "")
     {
+        var payload = new ModeratorChangedPayload(occurrenceId, newModeratorUserId, newModeratorName);
         await hubContext.Clients.Group(GetGroupName(occurrenceId))
-            .SendAsync("ModeratorChanged", new { occurrenceId, newModeratorUserId });
+            .SendAsync("ModeratorChanged", payload);
     }
 
     /// <summary>
@@ -118,16 +132,15 @@ public class RoomHub : Hub
     /// </summary>
     /// <param name="hubContext">The hub context for broadcasting.</param>
     /// <param name="occurrenceId">The room occurrence identifier.</param>
-    /// <param name="recordingId">The recording identifier.</param>
-    /// <param name="status">The recording status.</param>
+    /// <param name="isRecording">Whether the room is currently being recorded.</param>
     public static async Task BroadcastRecordingStatusChanged(
         IHubContext<RoomHub> hubContext,
         string occurrenceId,
-        string recordingId,
-        string status)
+        bool isRecording)
     {
+        var payload = new RecordingStatusChangedPayload(occurrenceId, isRecording);
         await hubContext.Clients.Group(GetGroupName(occurrenceId))
-            .SendAsync("RecordingStatusChanged", new { occurrenceId, recordingId, status });
+            .SendAsync("RecordingStatusChanged", payload);
     }
 
     private static string GetGroupName(string occurrenceId) => $"room-{occurrenceId}";

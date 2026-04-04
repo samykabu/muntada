@@ -93,12 +93,19 @@ public sealed class OccurrenceGenerationJob : BackgroundService
                 var occurrenceDates = recurrenceService.GenerateOccurrences(
                     series.RecurrenceRule,
                     series.OrganizerTimeZoneId,
-                    now,
+                    series.StartsAt,
                     series.EndsAt,
                     generateUntil);
 
+                // Find the default moderator from the most recent previous occurrence of this series
+                var lastModeratorUserId = await db.RoomOccurrences
+                    .Where(o => o.RoomSeriesId == series.Id && o.ModeratorAssignment != null && o.ScheduledAt < now)
+                    .OrderByDescending(o => o.ScheduledAt)
+                    .Select(o => o.ModeratorAssignment!.UserId)
+                    .FirstOrDefaultAsync(cancellationToken);
+
                 var newCount = 0;
-                foreach (var scheduledAt in occurrenceDates)
+                foreach (var scheduledAt in occurrenceDates.Where(d => d >= now))
                 {
                     if (existingDateSet.Contains(scheduledAt))
                         continue;
@@ -111,6 +118,11 @@ public sealed class OccurrenceGenerationJob : BackgroundService
                         series.OrganizerTimeZoneId,
                         template.Settings,
                         series.CreatedBy);
+
+                    if (lastModeratorUserId is not null)
+                    {
+                        occurrence.AssignModeratorAndSchedule(lastModeratorUserId);
+                    }
 
                     db.RoomOccurrences.Add(occurrence);
                     newCount++;

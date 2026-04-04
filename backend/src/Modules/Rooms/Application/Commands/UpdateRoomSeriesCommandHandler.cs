@@ -22,7 +22,7 @@ public sealed record UpdateRoomSeriesCommand(
     string SeriesId,
     string? RecurrenceRule,
     DateTimeOffset? EndsAt,
-    string ModeratorUserId) : IRequest<RoomSeries>;
+    string? ModeratorUserId) : IRequest<RoomSeries>;
 
 /// <summary>
 /// Handles <see cref="UpdateRoomSeriesCommand"/> — updates recurrence and regenerates
@@ -80,11 +80,11 @@ public sealed class UpdateRoomSeriesCommandHandler : IRequestHandler<UpdateRoomS
             var occurrenceDates = _recurrenceService.GenerateOccurrences(
                 series.RecurrenceRule,
                 series.OrganizerTimeZoneId,
-                now,
+                series.StartsAt,
                 series.EndsAt,
                 generateUntil);
 
-            foreach (var scheduledAt in occurrenceDates)
+            foreach (var scheduledAt in occurrenceDates.Where(d => d >= now))
             {
                 var occurrence = RoomOccurrence.CreateFromSeries(
                     series.TenantId,
@@ -95,7 +95,8 @@ public sealed class UpdateRoomSeriesCommandHandler : IRequestHandler<UpdateRoomS
                     template.Settings,
                     series.CreatedBy);
 
-                occurrence.AssignModeratorAndSchedule(request.ModeratorUserId);
+                if (request.ModeratorUserId is not null)
+                    occurrence.AssignModeratorAndSchedule(request.ModeratorUserId);
                 _db.RoomOccurrences.Add(occurrence);
             }
         }
