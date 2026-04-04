@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Infrastructure;
 using Muntada.SharedKernel.Domain.Exceptions;
@@ -25,13 +26,15 @@ public sealed record AssignModeratorCommand(
 public sealed class AssignModeratorCommandHandler : IRequestHandler<AssignModeratorCommand, RoomOccurrence>
 {
     private readonly RoomsDbContext _db;
+    private readonly ILogger<AssignModeratorCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AssignModeratorCommandHandler"/> class.
     /// </summary>
-    public AssignModeratorCommandHandler(RoomsDbContext db)
+    public AssignModeratorCommandHandler(RoomsDbContext db, ILogger<AssignModeratorCommandHandler> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -52,6 +55,8 @@ public sealed class AssignModeratorCommandHandler : IRequestHandler<AssignModera
         occurrence.ChangeModerator(request.ModeratorUserId);
         occurrence.IncrementVersion();
         await _db.SaveChangesAsync(cancellationToken);
+
+        RoomsLogging.ModeratorAssigned(_logger, request.OccurrenceId, request.ModeratorUserId, null);
 
         return occurrence;
     }

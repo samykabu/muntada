@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Muntada.Rooms.Domain.Events;
 using Muntada.Rooms.Domain.Template;
 using Muntada.Rooms.Infrastructure;
@@ -39,18 +40,22 @@ public sealed record CreateRoomTemplateCommand(
 public sealed class CreateRoomTemplateCommandHandler : IRequestHandler<CreateRoomTemplateCommand, RoomTemplate>
 {
     private readonly RoomsDbContext _db;
+    private readonly ILogger<CreateRoomTemplateCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateRoomTemplateCommandHandler"/> class.
     /// </summary>
-    public CreateRoomTemplateCommandHandler(RoomsDbContext db)
+    public CreateRoomTemplateCommandHandler(RoomsDbContext db, ILogger<CreateRoomTemplateCommandHandler> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     /// <inheritdoc />
     public async Task<RoomTemplate> Handle(CreateRoomTemplateCommand request, CancellationToken cancellationToken)
     {
+        using var activity = RoomsTelemetry.TemplateCreation("pending", request.TenantId);
+
         // Validate name uniqueness within tenant
         var nameExists = await _db.RoomTemplates
             .AnyAsync(t => t.TenantId == request.TenantId && t.Name == request.Name, cancellationToken);
@@ -75,6 +80,9 @@ public sealed class CreateRoomTemplateCommandHandler : IRequestHandler<CreateRoo
 
         _db.RoomTemplates.Add(template);
         await _db.SaveChangesAsync(cancellationToken);
+
+        activity?.SetTag("rooms.template_id", template.Id.Value);
+        RoomsLogging.TemplateCreated(_logger, template.Id.Value, request.TenantId, null);
 
         return template;
     }

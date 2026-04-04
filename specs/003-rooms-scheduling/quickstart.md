@@ -91,6 +91,14 @@ When implementing the Rooms module, ensure:
 - [ ] Background jobs registered (OccurrenceGeneration, RetentionCleanup, GracePeriodExpiry)
 - [ ] OpenTelemetry activity source registered for `Rooms` traces
 
+## Validation Status
+
+> **Validated**: pending full Aspire stack run. T113 (integration smoke test) and T114 (performance
+> benchmarks) require a running Aspire environment with all infrastructure dependencies
+> (SQL Server, Redis, RabbitMQ, MinIO, LiveKit). See
+> `backend/tests/Modules/Rooms.Tests/Integration/PerformanceNotes.md` for performance
+> targets and validation instructions.
+
 ## Reference Files
 
 | File | Purpose |

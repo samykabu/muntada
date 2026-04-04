@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Muntada.Rooms.Domain.Invite;
 using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Domain.Participant;
@@ -37,18 +38,21 @@ public sealed record JoinRoomResult(
 public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, JoinRoomResult>
 {
     private readonly RoomsDbContext _db;
+    private readonly ILogger<JoinRoomCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JoinRoomCommandHandler"/> class.
     /// </summary>
-    public JoinRoomCommandHandler(RoomsDbContext db)
+    public JoinRoomCommandHandler(RoomsDbContext db, ILogger<JoinRoomCommandHandler> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     /// <inheritdoc />
     public async Task<JoinRoomResult> Handle(JoinRoomCommand request, CancellationToken cancellationToken)
     {
+        using var activity = RoomsTelemetry.ParticipantJoin(request.OccurrenceId, request.UserId, "pending");
         // Validate the invite token
         var invite = await _db.RoomInvites
             .FirstOrDefaultAsync(i => i.InviteToken == request.Token, cancellationToken);
@@ -103,6 +107,9 @@ public sealed class JoinRoomCommandHandler : IRequestHandler<JoinRoomCommand, Jo
         invite.Accept();
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        activity?.SetTag("rooms.participant_role", participantState.Role.ToString());
+        RoomsLogging.ParticipantJoined(_logger, request.OccurrenceId, participantState.DisplayName, participantState.Role.ToString(), null);
 
         return new JoinRoomResult(participantState, occurrence);
     }

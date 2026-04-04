@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Muntada.Rooms.Api.Dtos;
+using Muntada.Rooms.Api.Filters;
 using Muntada.Rooms.Application.Services;
 using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Domain.Recording;
@@ -16,6 +17,7 @@ namespace Muntada.Rooms.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/tenants/{tenantId}/room-occurrences/{occurrenceId}/recording")]
+[ServiceFilter(typeof(RoomTenantValidationFilter))]
 public class RecordingsController : ControllerBase
 {
     private readonly ISender _sender;

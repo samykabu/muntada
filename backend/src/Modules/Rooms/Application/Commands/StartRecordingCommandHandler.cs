@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Muntada.Rooms.Application.Services;
 using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Domain.Recording;
@@ -28,19 +29,22 @@ public sealed class StartRecordingCommandHandler : IRequestHandler<StartRecordin
 {
     private readonly RoomsDbContext _db;
     private readonly IRecordingService _recordingService;
+    private readonly ILogger<StartRecordingCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StartRecordingCommandHandler"/> class.
     /// </summary>
-    public StartRecordingCommandHandler(RoomsDbContext db, IRecordingService recordingService)
+    public StartRecordingCommandHandler(RoomsDbContext db, IRecordingService recordingService, ILogger<StartRecordingCommandHandler> logger)
     {
         _db = db;
         _recordingService = recordingService;
+        _logger = logger;
     }
 
     /// <inheritdoc />
     public async Task<Recording> Handle(StartRecordingCommand request, CancellationToken cancellationToken)
     {
+        using var activity = RoomsTelemetry.RecordingOperation(request.OccurrenceId, "pending", "start");
         var occurrenceId = new RoomOccurrenceId(request.OccurrenceId);
         var occurrence = await _db.RoomOccurrences
             .FirstOrDefaultAsync(o => o.Id == occurrenceId && o.TenantId == request.TenantId, cancellationToken);
@@ -86,6 +90,9 @@ public sealed class StartRecordingCommandHandler : IRequestHandler<StartRecordin
 
         _db.Recordings.Add(recording);
         await _db.SaveChangesAsync(cancellationToken);
+
+        activity?.SetTag("rooms.recording_id", recording.Id.Value);
+        RoomsLogging.RecordingStarted(_logger, request.OccurrenceId, recording.Id.Value, null);
 
         return recording;
     }

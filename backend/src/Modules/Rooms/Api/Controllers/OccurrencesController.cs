@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Muntada.Rooms.Api.Dtos;
+using Muntada.Rooms.Api.Filters;
 using Muntada.Rooms.Application.Commands;
 using Muntada.Rooms.Application.Queries;
 using Muntada.Rooms.Domain.Occurrence;
@@ -12,8 +13,12 @@ namespace Muntada.Rooms.Api.Controllers;
 /// REST API controller for room occurrence management.
 /// Supports creating standalone rooms, listing with filters, and single-occurrence overrides.
 /// </summary>
+/// <remarks>
+/// TODO: All PATCH/POST endpoints require Admin/Owner authorization check via middleware.
+/// </remarks>
 [ApiController]
 [Route("api/v1/tenants/{tenantId}/room-occurrences")]
+[ServiceFilter(typeof(RoomTenantValidationFilter))]
 public class OccurrencesController : ControllerBase
 {
     private readonly ISender _sender;

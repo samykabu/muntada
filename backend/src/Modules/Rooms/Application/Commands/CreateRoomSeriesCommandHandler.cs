@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Muntada.Rooms.Application.Services;
 using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Domain.Series;
@@ -40,6 +41,7 @@ public sealed class CreateRoomSeriesCommandHandler : IRequestHandler<CreateRoomS
 {
     private readonly RoomsDbContext _db;
     private readonly IRecurrenceService _recurrenceService;
+    private readonly ILogger<CreateRoomSeriesCommandHandler> _logger;
 
     /// <summary>The number of days ahead to generate initial occurrences.</summary>
     private const int GenerateAheadDays = 30;
@@ -47,15 +49,17 @@ public sealed class CreateRoomSeriesCommandHandler : IRequestHandler<CreateRoomS
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateRoomSeriesCommandHandler"/> class.
     /// </summary>
-    public CreateRoomSeriesCommandHandler(RoomsDbContext db, IRecurrenceService recurrenceService)
+    public CreateRoomSeriesCommandHandler(RoomsDbContext db, IRecurrenceService recurrenceService, ILogger<CreateRoomSeriesCommandHandler> logger)
     {
         _db = db;
         _recurrenceService = recurrenceService;
+        _logger = logger;
     }
 
     /// <inheritdoc />
     public async Task<RoomSeries> Handle(CreateRoomSeriesCommand request, CancellationToken cancellationToken)
     {
+        using var activity = RoomsTelemetry.SeriesCreation("pending", request.TenantId, request.RecurrenceRule);
         // Validate template exists for this tenant
         var templateId = new RoomTemplateId(request.TemplateId);
         var template = await _db.RoomTemplates
@@ -103,6 +107,9 @@ public sealed class CreateRoomSeriesCommandHandler : IRequestHandler<CreateRoomS
         }
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        activity?.SetTag("rooms.series_id", series.Id.Value);
+        RoomsLogging.SeriesCreated(_logger, series.Id.Value, request.TenantId, request.RecurrenceRule, null);
 
         return series;
     }

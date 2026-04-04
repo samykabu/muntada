@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Infrastructure;
 using Muntada.SharedKernel.Domain.Exceptions;
@@ -25,13 +26,15 @@ public sealed record HandoverModeratorCommand(
 public sealed class HandoverModeratorCommandHandler : IRequestHandler<HandoverModeratorCommand, RoomOccurrence>
 {
     private readonly RoomsDbContext _db;
+    private readonly ILogger<HandoverModeratorCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HandoverModeratorCommandHandler"/> class.
     /// </summary>
-    public HandoverModeratorCommandHandler(RoomsDbContext db)
+    public HandoverModeratorCommandHandler(RoomsDbContext db, ILogger<HandoverModeratorCommandHandler> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -49,9 +52,12 @@ public sealed class HandoverModeratorCommandHandler : IRequestHandler<HandoverMo
                 "Status",
                 $"Moderator handover is only allowed during Grace period. Room is currently in '{occurrence.Status}' status.");
 
+        var oldModeratorId = occurrence.ModeratorAssignment?.UserId ?? "unknown";
         occurrence.HandoverModerator(request.ToUserId);
         occurrence.IncrementVersion();
         await _db.SaveChangesAsync(cancellationToken);
+
+        RoomsLogging.ModeratorHandover(_logger, request.OccurrenceId, oldModeratorId, request.ToUserId, null);
 
         return occurrence;
     }

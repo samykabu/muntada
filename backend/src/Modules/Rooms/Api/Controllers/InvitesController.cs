@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Muntada.Rooms.Api.Dtos;
+using Muntada.Rooms.Api.Filters;
 using Muntada.Rooms.Application.Commands;
 using Muntada.Rooms.Application.Queries;
 using Muntada.Rooms.Domain.Invite;
@@ -14,6 +15,7 @@ namespace Muntada.Rooms.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/tenants/{tenantId}/room-occurrences/{occurrenceId}/invites")]
+[ServiceFilter(typeof(RoomTenantValidationFilter))]
 public class InvitesController : ControllerBase
 {
     private readonly ISender _sender;
@@ -38,6 +40,7 @@ public class InvitesController : ControllerBase
     [ProducesResponseType(typeof(List<RoomInviteResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> CreateInvites(
         [FromRoute] string tenantId,
         [FromRoute] string occurrenceId,

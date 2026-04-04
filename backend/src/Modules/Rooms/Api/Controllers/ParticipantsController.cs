@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Muntada.Rooms.Api.Dtos;
+using Muntada.Rooms.Api.Filters;
 using Muntada.Rooms.Application.Queries;
 
 namespace Muntada.Rooms.Api.Controllers;
@@ -12,6 +13,7 @@ namespace Muntada.Rooms.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/tenants/{tenantId}/room-occurrences/{occurrenceId}")]
+[ServiceFilter(typeof(RoomTenantValidationFilter))]
 public class ParticipantsController : ControllerBase
 {
     private readonly ISender _sender;

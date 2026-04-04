@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Muntada.Rooms.Api.Dtos;
+using Muntada.Rooms.Api.Filters;
 using Muntada.Rooms.Application.Commands;
 using Muntada.Rooms.Application.Queries;
 using Muntada.Rooms.Domain.Template;
@@ -14,6 +15,7 @@ namespace Muntada.Rooms.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/tenants/{tenantId}/room-templates")]
+[ServiceFilter(typeof(RoomTenantValidationFilter))]
 public class TemplatesController : ControllerBase
 {
     private readonly ISender _sender;

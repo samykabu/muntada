@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Muntada.Rooms.Domain.Invite;
 using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Infrastructure;
@@ -38,18 +39,21 @@ public sealed record InviteRequest(
 public sealed class GenerateRoomInviteCommandHandler : IRequestHandler<GenerateRoomInviteCommand, List<RoomInvite>>
 {
     private readonly RoomsDbContext _db;
+    private readonly ILogger<GenerateRoomInviteCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GenerateRoomInviteCommandHandler"/> class.
     /// </summary>
-    public GenerateRoomInviteCommandHandler(RoomsDbContext db)
+    public GenerateRoomInviteCommandHandler(RoomsDbContext db, ILogger<GenerateRoomInviteCommandHandler> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     /// <inheritdoc />
     public async Task<List<RoomInvite>> Handle(GenerateRoomInviteCommand request, CancellationToken cancellationToken)
     {
+        using var activity = RoomsTelemetry.InviteGeneration(request.OccurrenceId, "batch", request.Invites.Count);
         var occurrenceId = new RoomOccurrenceId(request.OccurrenceId);
         var occurrence = await _db.RoomOccurrences
             .FirstOrDefaultAsync(o => o.Id == occurrenceId && o.TenantId == request.TenantId, cancellationToken);
@@ -90,6 +94,11 @@ public sealed class GenerateRoomInviteCommandHandler : IRequestHandler<GenerateR
         }
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        foreach (var invite in createdInvites)
+        {
+            RoomsLogging.InviteSent(_logger, request.OccurrenceId, invite.Id.Value, invite.InviteType.ToString(), null);
+        }
 
         return createdInvites;
     }

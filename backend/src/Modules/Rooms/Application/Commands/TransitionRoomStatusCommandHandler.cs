@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Muntada.Rooms.Domain.Occurrence;
 using Muntada.Rooms.Infrastructure;
 using Muntada.SharedKernel.Domain.Exceptions;
@@ -25,13 +26,15 @@ public sealed record TransitionRoomStatusCommand(
 public sealed class TransitionRoomStatusCommandHandler : IRequestHandler<TransitionRoomStatusCommand, RoomOccurrence>
 {
     private readonly RoomsDbContext _db;
+    private readonly ILogger<TransitionRoomStatusCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TransitionRoomStatusCommandHandler"/> class.
     /// </summary>
-    public TransitionRoomStatusCommandHandler(RoomsDbContext db)
+    public TransitionRoomStatusCommandHandler(RoomsDbContext db, ILogger<TransitionRoomStatusCommandHandler> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -43,6 +46,9 @@ public sealed class TransitionRoomStatusCommandHandler : IRequestHandler<Transit
 
         if (occurrence is null)
             throw new EntityNotFoundException(nameof(RoomOccurrence), request.OccurrenceId);
+
+        var fromStatus = occurrence.Status.ToString();
+        using var activity = RoomsTelemetry.RoomTransition(request.OccurrenceId, fromStatus, request.Trigger.ToString());
 
         // Validate the transition is allowed before attempting it
         if (!occurrence.CanFire(request.Trigger))
@@ -76,6 +82,8 @@ public sealed class TransitionRoomStatusCommandHandler : IRequestHandler<Transit
 
         occurrence.IncrementVersion();
         await _db.SaveChangesAsync(cancellationToken);
+
+        RoomsLogging.RoomTransition(_logger, request.OccurrenceId, fromStatus, occurrence.Status.ToString(), null);
 
         return occurrence;
     }
