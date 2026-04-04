@@ -15,18 +15,18 @@ interface FieldConfig {
 
 const FIELDS: FieldConfig[] = [
   { key: 'recordingRetentionDays', label: 'Recordings', min: 30, max: 3650 },
-  { key: 'chatRetentionDays', label: 'Chat Messages', min: 30, max: 3650 },
+  { key: 'chatMessageRetentionDays', label: 'Chat Messages', min: 30, max: 3650 },
   { key: 'fileRetentionDays', label: 'Files', min: 30, max: 3650 },
   { key: 'auditLogRetentionDays', label: 'Audit Logs', min: 2555, max: 3650 },
-  { key: 'activityRetentionDays', label: 'Activity', min: 30, max: 3650 },
+  { key: 'userActivityLogRetentionDays', label: 'Activity', min: 30, max: 3650 },
 ];
 
 const DEFAULT_VALUES: RetentionData = {
   recordingRetentionDays: 365,
-  chatRetentionDays: 365,
+  chatMessageRetentionDays: 365,
   fileRetentionDays: 365,
   auditLogRetentionDays: 2555,
-  activityRetentionDays: 365,
+  userActivityLogRetentionDays: 365,
 };
 
 /** Form for configuring data retention periods per category. */

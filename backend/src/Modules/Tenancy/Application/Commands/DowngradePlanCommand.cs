@@ -172,9 +172,7 @@ public sealed class DowngradePlanCommandHandler : IRequestHandler<DowngradePlanC
             downgradeEffectiveDate = new DateTime(now.Year, now.Month, DateTime.DaysInMonth(now.Year, now.Month), 23, 59, 59, DateTimeKind.Utc);
 
             // Store pending downgrade as a plan assignment with a future start date
-            var pendingPlan = TenantPlan.Assign(request.TenantId, targetPlan.Id);
-            // Mark as not current since it is pending
-            pendingPlan.End();
+            var pendingPlan = TenantPlan.AssignFuture(request.TenantId, targetPlan.Id, downgradeEffectiveDate);
             _dbContext.TenantPlans.Add(pendingPlan);
         }
         else

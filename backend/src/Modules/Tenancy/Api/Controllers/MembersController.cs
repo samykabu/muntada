@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -85,8 +86,7 @@ public sealed class MembersController : ControllerBase
         [FromBody] InviteMemberRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract InvitedBy from authenticated user claims once auth middleware is wired
-        var invitedBy = Guid.NewGuid();
+        var invitedBy = GetAuthenticatedUserId();
 
         if (!Enum.TryParse<TenantRole>(request.Role, ignoreCase: true, out var role))
         {
@@ -124,8 +124,7 @@ public sealed class MembersController : ControllerBase
         [FromBody] AcceptInviteRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract UserId from authenticated user claims once auth middleware is wired
-        var userId = Guid.NewGuid();
+        var userId = GetAuthenticatedUserId();
 
         var command = new AcceptTenantInviteCommand(request.Token, userId);
         var result = await _sender.Send(command, cancellationToken);
@@ -151,8 +150,7 @@ public sealed class MembersController : ControllerBase
         [FromBody] UpdateRoleRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract RequestedBy from authenticated user claims once auth middleware is wired
-        var requestedBy = Guid.NewGuid();
+        var requestedBy = GetAuthenticatedUserId();
 
         if (!Enum.TryParse<TenantRole>(request.Role, ignoreCase: true, out var newRole))
         {
@@ -182,14 +180,24 @@ public sealed class MembersController : ControllerBase
         Guid memberId,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract RequestedBy from authenticated user claims once auth middleware is wired
-        var requestedBy = Guid.NewGuid();
+        var requestedBy = GetAuthenticatedUserId();
 
         var command = new RemoveTenantMemberCommand(tenantId, memberId, requestedBy);
         await _sender.Send(command, cancellationToken);
 
         return NoContent();
     }
+
+    /// <summary>
+    /// Extracts the authenticated user's identifier from JWT claims.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">Thrown when no valid user identifier is found in claims.</exception>
+    private Guid GetAuthenticatedUserId() =>
+        Guid.TryParse(
+            User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
+            out var id)
+            ? id
+            : throw new UnauthorizedAccessException("User not authenticated");
 }
 
 /// <summary>

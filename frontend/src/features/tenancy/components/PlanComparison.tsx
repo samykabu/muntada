@@ -1,11 +1,11 @@
 import { useGetCurrentPlanQuery, useGetAvailablePlansQuery, useUpgradePlanMutation, useDowngradePlanMutation } from '../api/planApi';
-import type { PlanResponse } from '../api/planApi';
+import type { PlanDefinitionResponse, PlanLimits } from '../api/planApi';
 
 interface PlanComparisonProps {
   tenantId: string;
 }
 
-const featureLabels: Record<string, string> = {
+const featureLabels: Record<keyof PlanLimits, string> = {
   maxRooms: 'Rooms',
   maxParticipantsPerRoom: 'Participants / Room',
   storageGb: 'Storage (GB)',
@@ -22,14 +22,13 @@ export function PlanComparison({ tenantId }: PlanComparisonProps) {
   if (loadingCurrent || loadingPlans) return <p>Loading plans...</p>;
   if (!currentPlan || !plans) return <p>Unable to load plan information.</p>;
 
-  const isCurrentPlan = (plan: PlanResponse) => plan.id === currentPlan.plan.id;
+  const isCurrentPlan = (plan: PlanDefinitionResponse) => plan.id === currentPlan.plan.id;
 
-  const handleAction = async (plan: PlanResponse) => {
+  const handleAction = async (plan: PlanDefinitionResponse) => {
     if (plan.monthlyPriceUsd > currentPlan.plan.monthlyPriceUsd) {
-      await upgradePlan({ tenantId, planId: plan.id });
+      await upgradePlan({ tenantId, targetPlanDefinitionId: plan.id });
     } else {
-      // Downgrade effective at next billing cycle
-      await downgradePlan({ tenantId, planId: plan.id, effectiveDate: currentPlan.renewsAt });
+      await downgradePlan({ tenantId, targetPlanDefinitionId: plan.id, effectiveDate: 'immediate' });
     }
   };
 
@@ -88,12 +87,12 @@ export function PlanComparison({ tenantId }: PlanComparisonProps) {
           </tr>
         </thead>
         <tbody>
-          {(Object.keys(featureLabels) as Array<keyof typeof featureLabels>).map((key) => (
+          {(Object.keys(featureLabels) as Array<keyof PlanLimits>).map((key) => (
             <tr key={key} style={{ borderBottom: '1px solid #f3f4f6' }}>
               <td style={{ padding: '0.5rem' }}>{featureLabels[key]}</td>
               {plans.map((p) => (
                 <td key={p.id} style={{ padding: '0.5rem', fontWeight: isCurrentPlan(p) ? 600 : 400 }}>
-                  {p[key as keyof PlanResponse]?.toLocaleString() ?? '-'}
+                  {p.limits[key]?.toLocaleString() ?? '-'}
                 </td>
               ))}
             </tr>

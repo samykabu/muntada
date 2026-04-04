@@ -62,18 +62,21 @@ public class UsageAggregationJob
 
         _logger.LogInformation("Starting usage aggregation for {Count} active tenants", activeTenants.Count);
 
-        foreach (var tenantId in activeTenants)
-        {
-            try
+        await Parallel.ForEachAsync(
+            activeTenants,
+            new ParallelOptions { MaxDegreeOfParallelism = 10, CancellationToken = cancellationToken },
+            async (tenantId, ct) =>
             {
-                await AggregateForTenantAsync(tenantId, today, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "Failed to aggregate usage for tenant {TenantId}", tenantId);
-            }
-        }
+                try
+                {
+                    await AggregateForTenantAsync(tenantId, today, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Failed to aggregate usage for tenant {TenantId}", tenantId);
+                }
+            });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -141,7 +144,7 @@ public class UsageAggregationJob
 
         if (percentUsed >= 80)
         {
-            await _alertService.SendThresholdAlertAsync(tenantId, resource, percentUsed, ct);
+            await _alertService.SendThresholdAlertAsync(tenantId, resource, percentUsed, limitCheck.CurrentUsage, limitCheck.Limit, ct);
         }
     }
 }

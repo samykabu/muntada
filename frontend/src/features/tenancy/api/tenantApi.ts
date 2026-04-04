@@ -3,9 +3,17 @@ import { baseApi } from '../../../shared/api/baseApi';
 /** Tenant creation request payload. */
 export interface CreateTenantRequest {
   name: string;
-  slug: string;
+  slug?: string;
   industry?: string;
   teamSize?: string;
+}
+
+/** Tenant branding information. */
+export interface TenantBranding {
+  logoUrl?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  customDomain?: string;
 }
 
 /** Tenant response from the API. */
@@ -15,10 +23,7 @@ export interface TenantResponse {
   slug: string;
   industry?: string;
   teamSize?: string;
-  logoUrl?: string;
-  primaryColor?: string;
-  secondaryColor?: string;
-  customDomain?: string;
+  branding: TenantBranding;
   createdAt: string;
 }
 
@@ -42,21 +47,21 @@ export const tenantApi = baseApi.injectEndpoints({
     updateBranding: builder.mutation<TenantResponse, UpdateBrandingRequest>({
       query: ({ tenantId, formData }) => ({
         url: `/api/v1/tenants/${tenantId}/branding`,
-        method: 'PUT',
+        method: 'PATCH',
         body: formData,
       }),
       invalidatesTags: (_result, _error, { tenantId }) => [{ type: 'Tenant', id: tenantId }],
     }),
     updateRetention: builder.mutation<void, { tenantId: string; retention: RetentionSettings }>({
       query: ({ tenantId, retention }) => ({
-        url: `/api/v1/tenants/${tenantId}/retention`,
+        url: `/api/v1/tenants/${tenantId}/retention-policies`,
         method: 'PATCH',
         body: retention,
       }),
       invalidatesTags: (_result, _error, { tenantId }) => [{ type: 'Tenant', id: tenantId }],
     }),
     getRetention: builder.query<RetentionSettings, string>({
-      query: (tenantId) => ({ url: `/api/v1/tenants/${tenantId}/retention` }),
+      query: (tenantId) => ({ url: `/api/v1/tenants/${tenantId}/retention-policies` }),
       providesTags: (_result, _error, tenantId) => [{ type: 'Tenant', id: tenantId }],
     }),
   }),
@@ -65,10 +70,10 @@ export const tenantApi = baseApi.injectEndpoints({
 /** Retention settings for a tenant. */
 export interface RetentionSettings {
   recordingRetentionDays: number;
-  chatRetentionDays: number;
+  chatMessageRetentionDays: number;
   fileRetentionDays: number;
   auditLogRetentionDays: number;
-  activityRetentionDays: number;
+  userActivityLogRetentionDays: number;
 }
 
 export const {

@@ -69,7 +69,7 @@ public sealed class GetUsageHistoryQueryHandler : IRequestHandler<GetUsageHistor
     {
         var days = Math.Clamp(request.Days, 1, 90);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var fromDate = today.AddDays(-days);
+        var fromDate = today.AddDays(-(days - 1));
 
         var snapshots = await _dbContext.TenantUsageSnapshots
             .AsNoTracking()

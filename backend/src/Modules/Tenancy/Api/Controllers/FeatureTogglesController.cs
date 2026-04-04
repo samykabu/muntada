@@ -126,7 +126,7 @@ public sealed class FeatureTogglesController : ControllerBase
             CanaryPercentage: result.CanaryPercentage,
             Overrides: []);
 
-        return CreatedAtAction(nameof(CreateToggle), new { id = result.Id }, response);
+        return StatusCode(StatusCodes.Status201Created, response);
     }
 
     /// <summary>

@@ -1,6 +1,6 @@
 # API Contract: Feature Toggles
 
-**Base Path**: `/api/v1/admin/feature-toggles` (internal admin API)
+**Base Path**: `/api/v1/feature-toggles` (internal admin API)
 
 ---
 

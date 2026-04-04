@@ -13,10 +13,7 @@
 ```json
 {
   "tenantId": "tnt_abc123",
-  "billingPeriod": {
-    "start": "2026-04-01T00:00:00Z",
-    "end": "2026-04-30T23:59:59Z"
-  },
+  "planName": "Professional",
   "metrics": [
     {
       "resource": "rooms",
@@ -75,11 +72,9 @@
 ```json
 {
   "tenantId": "tnt_abc123",
-  "period": {
-    "start": "2026-03-04",
-    "end": "2026-04-03"
-  },
-  "dailySnapshots": [
+  "fromDate": "2026-03-04",
+  "toDate": "2026-04-03",
+  "snapshots": [
     {
       "date": "2026-04-03",
       "roomsCreated": 5,

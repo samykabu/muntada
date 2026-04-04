@@ -4,17 +4,17 @@ import { baseApi } from '../../../shared/api/baseApi';
 export type MemberRole = 'Owner' | 'Admin' | 'Member';
 
 /** Member status within a tenant. */
-export type MemberStatus = 'Active' | 'Invited' | 'Suspended';
+export type MemberStatus = 'Active' | 'Pending' | 'Inactive';
 
 /** Member response from the API. */
 export interface MemberResponse {
   id: string;
   userId: string;
   email: string;
-  displayName: string;
+  displayName?: string | null;
   role: MemberRole;
   status: MemberStatus;
-  joinedAt: string;
+  joinedAt?: string | null;
 }
 
 /** Paginated list of members. */
@@ -80,7 +80,7 @@ export const memberApi = baseApi.injectEndpoints({
     }),
     acceptInvite: builder.mutation<void, AcceptInviteRequest>({
       query: ({ tenantId, token }) => ({
-        url: `/api/v1/tenants/${tenantId}/members/accept-invite`,
+        url: `/api/v1/tenants/${tenantId}/members/accept`,
         method: 'POST',
         body: { token },
       }),
@@ -88,7 +88,7 @@ export const memberApi = baseApi.injectEndpoints({
     updateRole: builder.mutation<void, UpdateRoleRequest>({
       query: ({ tenantId, memberId, role }) => ({
         url: `/api/v1/tenants/${tenantId}/members/${memberId}/role`,
-        method: 'PUT',
+        method: 'PATCH',
         body: { role },
       }),
       invalidatesTags: (_result, _error, { tenantId }) => [{ type: 'Members', id: tenantId }],

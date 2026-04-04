@@ -33,7 +33,7 @@ export function UsageProgressBar({ label, current, limit, unit }: UsageProgressB
       <div
         style={{ width: '100%', height: 8, backgroundColor: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}
         role="progressbar"
-        aria-valuenow={current}
+        aria-valuenow={Math.min(current, limit)}
         aria-valuemin={0}
         aria-valuemax={limit}
         aria-label={`${label} usage`}

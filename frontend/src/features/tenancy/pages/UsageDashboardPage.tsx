@@ -28,17 +28,21 @@ export function UsageDashboardPage() {
       {/* Current usage */}
       <section style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>Current Usage</h2>
-        <UsageProgressBar label="Rooms" current={usage.rooms.current} limit={usage.rooms.limit} unit={usage.rooms.unit} />
-        <UsageProgressBar label="Participants" current={usage.participants.current} limit={usage.participants.limit} unit={usage.participants.unit} />
-        <UsageProgressBar label="Storage" current={usage.storageGb.current} limit={usage.storageGb.limit} unit={usage.storageGb.unit} />
-        <UsageProgressBar label="Recording" current={usage.recordingHours.current} limit={usage.recordingHours.limit} unit={usage.recordingHours.unit} />
-        <UsageProgressBar label="API Calls" current={usage.monthlyApiCalls.current} limit={usage.monthlyApiCalls.limit} unit={usage.monthlyApiCalls.unit} />
+        {usage.metrics.map((metric) => (
+          <UsageProgressBar
+            key={metric.resource}
+            label={metric.resource}
+            current={metric.current}
+            limit={metric.limit}
+            unit={metric.unit}
+          />
+        ))}
       </section>
 
       {/* Historical usage — placeholder for a chart library */}
       <section>
         <h2 style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>Usage History (30 days)</h2>
-        {history && history.length > 0 ? (
+        {history && history.snapshots.length > 0 ? (
           <div
             style={{
               border: '1px dashed #d1d5db',
@@ -48,7 +52,7 @@ export function UsageDashboardPage() {
               color: '#9ca3af',
             }}
           >
-            <p style={{ margin: 0 }}>Chart placeholder &mdash; {history.length} data points available.</p>
+            <p style={{ margin: 0 }}>Chart placeholder &mdash; {history.snapshots.length} data points available.</p>
             <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
               Integrate a chart library (e.g. Recharts, Chart.js) to visualize trends.
             </p>
@@ -64,7 +68,7 @@ export function UsageDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {history.slice(0, 7).map((h) => (
+                {history.snapshots.slice(0, 7).map((h) => (
                   <tr key={h.date} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: 4 }}>{h.date}</td>
                     <td style={{ padding: 4 }}>{h.rooms}</td>

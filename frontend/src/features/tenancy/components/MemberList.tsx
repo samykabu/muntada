@@ -60,7 +60,7 @@ export function MemberList({ tenantId, onInvite }: MemberListProps) {
           {data.items.map((member) => (
             <tr key={member.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
               <td style={{ padding: '0.5rem' }}>
-                <div style={{ fontWeight: 500 }}>{member.displayName}</div>
+                <div style={{ fontWeight: 500 }}>{member.displayName ?? member.email}</div>
                 <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{member.email}</div>
               </td>
               <td style={{ padding: '0.5rem' }}>
@@ -76,13 +76,15 @@ export function MemberList({ tenantId, onInvite }: MemberListProps) {
                 </span>
               </td>
               <td style={{ padding: '0.5rem' }}>{member.status}</td>
-              <td style={{ padding: '0.5rem' }}>{new Date(member.joinedAt).toLocaleDateString()}</td>
+              <td style={{ padding: '0.5rem' }}>
+                {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : '\u2014'}
+              </td>
               <td style={{ padding: '0.5rem' }}>
                 <select
                   value={member.role}
                   onChange={(e) => handleRoleChange(member.id, e.target.value as MemberRole)}
                   style={{ marginRight: 8 }}
-                  aria-label={`Change role for ${member.displayName}`}
+                  aria-label={`Change role for ${member.displayName ?? member.email}`}
                 >
                   {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>

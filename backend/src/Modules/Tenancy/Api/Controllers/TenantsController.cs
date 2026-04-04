@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -41,8 +42,7 @@ public sealed class TenantsController : ControllerBase
         [FromBody] CreateTenantRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: Extract CreatedBy from authenticated user claims once auth middleware is wired
-        var createdBy = Guid.NewGuid();
+        var createdBy = GetAuthenticatedUserId();
 
         var command = new CreateTenantCommand(
             request.Name,
@@ -160,4 +160,15 @@ public sealed class TenantsController : ControllerBase
                 await logoStream.DisposeAsync();
         }
     }
+
+    /// <summary>
+    /// Extracts the authenticated user's identifier from JWT claims.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">Thrown when no valid user identifier is found in claims.</exception>
+    private Guid GetAuthenticatedUserId() =>
+        Guid.TryParse(
+            User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
+            out var id)
+            ? id
+            : throw new UnauthorizedAccessException("User not authenticated");
 }

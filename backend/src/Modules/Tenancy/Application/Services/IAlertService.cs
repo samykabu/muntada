@@ -13,7 +13,9 @@ public interface IAlertService
     /// <param name="tenantId">The identifier of the tenant.</param>
     /// <param name="resource">The resource type that triggered the alert (e.g. "rooms", "storage").</param>
     /// <param name="percentUsed">The current usage percentage (0-100+).</param>
+    /// <param name="currentUsage">The current usage value for the resource.</param>
+    /// <param name="limit">The maximum allowed value for the resource.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task SendThresholdAlertAsync(Guid tenantId, string resource, int percentUsed, CancellationToken ct = default);
+    Task SendThresholdAlertAsync(Guid tenantId, string resource, int percentUsed, long currentUsage, long limit, CancellationToken ct = default);
 }

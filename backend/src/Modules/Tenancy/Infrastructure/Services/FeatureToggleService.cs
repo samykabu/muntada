@@ -124,9 +124,10 @@ public class FeatureToggleService : IFeatureToggleService
         if (percentage >= 100) return true;
         if (percentage <= 0) return false;
 
-        // Use a stable hash of tenant ID for consistent canary assignment
-        var hash = Math.Abs(tenantId.GetHashCode());
-        var bucket = hash % 100;
+        // Use a stable hash from GUID bytes for consistent canary assignment
+        var bytes = tenantId.ToByteArray();
+        var hash = BitConverter.ToUInt32(bytes, 0);
+        var bucket = (int)(hash % 100);
         return bucket < percentage;
     }
 }

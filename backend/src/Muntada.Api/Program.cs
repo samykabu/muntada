@@ -29,6 +29,11 @@ builder.Services.AddDbContext<TenancyDbContext>(options =>
 
 // Register Tenancy application services
 builder.Services.AddScoped<IPlanLimitService, PlanLimitService>();
+builder.Services.AddScoped<ITenantContext, TenantContextAccessor>();
+builder.Services.AddScoped<IBrandingService, BrandingService>();
+builder.Services.AddScoped<IFeatureToggleService, FeatureToggleService>();
+builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 

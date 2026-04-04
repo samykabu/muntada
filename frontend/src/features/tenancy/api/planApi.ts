@@ -1,14 +1,29 @@
 import { baseApi } from '../../../shared/api/baseApi';
 
-/** Plan tier information. */
-export interface PlanResponse {
-  id: string;
-  name: string;
-  tier: string;
+/** Plan limits nested under a plan definition. */
+export interface PlanLimits {
   maxRooms: number;
   maxParticipantsPerRoom: number;
   storageGb: number;
   recordingHours: number;
+}
+
+/** Plan tier information matching backend PlanResponse. */
+export interface PlanResponse {
+  id: string;
+  name: string;
+  tier: string;
+  limits: PlanLimits;
+  monthlyPriceUsd: number;
+  features: string[];
+}
+
+/** Plan definition response matching backend PlanDefinitionResponse. */
+export interface PlanDefinitionResponse {
+  id: string;
+  name: string;
+  tier: string;
+  limits: PlanLimits;
   monthlyPriceUsd: number;
   features: string[];
 }
@@ -20,30 +35,37 @@ export interface CurrentPlanResponse {
   renewsAt: string;
 }
 
-/** Resource usage for a tenant. */
-export interface UsageResponse {
-  tenantId: string;
-  rooms: UsageMetric;
-  participants: UsageMetric;
-  storageGb: UsageMetric;
-  recordingHours: UsageMetric;
-  monthlyApiCalls: UsageMetric;
-}
-
 /** A single usage metric with current value and limit. */
 export interface UsageMetric {
+  resource: string;
   current: number;
   limit: number;
   unit: string;
+  percentUsed: number;
+  thresholdStatus: string;
 }
 
-/** Historical usage data point. */
-export interface UsageHistoryPoint {
+/** Resource usage for a tenant matching backend response. */
+export interface UsageResponse {
+  tenantId: string;
+  planName: string;
+  metrics: UsageMetric[];
+}
+
+/** Historical usage snapshot. */
+export interface UsageSnapshot {
   date: string;
   rooms: number;
   participants: number;
   storageGb: number;
   recordingHours: number;
+}
+
+/** Historical usage response matching backend. */
+export interface UsageHistoryResponse {
+  fromDate: string;
+  toDate: string;
+  snapshots: UsageSnapshot[];
 }
 
 /** RTK Query API slice for plan and usage endpoints. */
@@ -53,22 +75,22 @@ export const planApi = baseApi.injectEndpoints({
       query: (tenantId) => ({ url: `/api/v1/tenants/${tenantId}/plan` }),
       providesTags: (_result, _error, tenantId) => [{ type: 'Plan', id: tenantId }],
     }),
-    getAvailablePlans: builder.query<PlanResponse[], void>({
+    getAvailablePlans: builder.query<PlanDefinitionResponse[], void>({
       query: () => ({ url: '/api/v1/plans/available' }),
     }),
-    upgradePlan: builder.mutation<void, { tenantId: string; planId: string }>({
-      query: ({ tenantId, planId }) => ({
+    upgradePlan: builder.mutation<void, { tenantId: string; targetPlanDefinitionId: string }>({
+      query: ({ tenantId, targetPlanDefinitionId }) => ({
         url: `/api/v1/tenants/${tenantId}/plan/upgrade`,
         method: 'POST',
-        body: { planId },
+        body: { targetPlanDefinitionId },
       }),
       invalidatesTags: (_result, _error, { tenantId }) => [{ type: 'Plan', id: tenantId }],
     }),
-    downgradePlan: builder.mutation<void, { tenantId: string; planId: string; effectiveDate: string }>({
-      query: ({ tenantId, planId, effectiveDate }) => ({
+    downgradePlan: builder.mutation<void, { tenantId: string; targetPlanDefinitionId: string; effectiveDate: 'immediate' | 'next-billing-cycle' }>({
+      query: ({ tenantId, targetPlanDefinitionId, effectiveDate }) => ({
         url: `/api/v1/tenants/${tenantId}/plan/downgrade`,
         method: 'POST',
-        body: { planId, effectiveDate },
+        body: { targetPlanDefinitionId, effectiveDate },
       }),
       invalidatesTags: (_result, _error, { tenantId }) => [{ type: 'Plan', id: tenantId }],
     }),
@@ -76,7 +98,7 @@ export const planApi = baseApi.injectEndpoints({
       query: (tenantId) => ({ url: `/api/v1/tenants/${tenantId}/usage` }),
       providesTags: (_result, _error, tenantId) => [{ type: 'Usage', id: tenantId }],
     }),
-    getUsageHistory: builder.query<UsageHistoryPoint[], { tenantId: string; days?: number }>({
+    getUsageHistory: builder.query<UsageHistoryResponse, { tenantId: string; days?: number }>({
       query: ({ tenantId, days = 30 }) => ({
         url: `/api/v1/tenants/${tenantId}/usage/history`,
         params: { days },

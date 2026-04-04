@@ -37,10 +37,9 @@
 **Auth**: Required (Bearer JWT)
 **Description**: List all available plan definitions for comparison.
 
-**Response 200**:
+**Response 200** (bare JSON array):
 ```json
-{
-  "plans": [
+[
     {
       "id": "pdef_free",
       "name": "Free",
@@ -55,8 +54,7 @@
       "monthlyPriceUsd": 29.00,
       "limits": { ... }
     }
-  ]
-}
+]
 ```
 
 ---

@@ -58,6 +58,27 @@ public class TenantPlan : Entity<Guid>
     }
 
     /// <summary>
+    /// Creates a pending plan assignment with a future start date that is not yet current.
+    /// The plan will become active when the start date arrives.
+    /// </summary>
+    /// <param name="tenantId">The identifier of the tenant.</param>
+    /// <param name="planDefinitionId">The identifier of the plan definition to assign.</param>
+    /// <param name="startDate">The future UTC date when this plan should become active.</param>
+    /// <returns>A new <see cref="TenantPlan"/> instance marked as not current with a future start date.</returns>
+    public static TenantPlan AssignFuture(Guid tenantId, Guid planDefinitionId, DateTime startDate)
+    {
+        return new TenantPlan
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            PlanDefinitionId = planDefinitionId,
+            StartDate = startDate,
+            EndDate = null,
+            IsCurrent = false
+        };
+    }
+
+    /// <summary>
     /// Ends this plan assignment by setting the end date to now and marking it as no longer current.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown when the plan has already ended.</exception>

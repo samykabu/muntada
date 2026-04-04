@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Muntada.Tenancy.Application.Services;
 using Muntada.Tenancy.Domain.Tenant;
 
@@ -8,10 +9,12 @@ namespace Muntada.Tenancy.Infrastructure.Services;
 /// <summary>
 /// Middleware that resolves the current tenant from JWT claims or X-Tenant-ID header,
 /// and enforces read-only access for suspended tenants.
+/// Uses in-memory caching to avoid querying the database on every request.
 /// </summary>
 public class TenantContextMiddleware
 {
     private readonly RequestDelegate _next;
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(60);
 
     /// <summary>Initializes a new instance of the middleware.</summary>
     public TenantContextMiddleware(RequestDelegate next)
@@ -20,7 +23,7 @@ public class TenantContextMiddleware
     }
 
     /// <summary>Resolves tenant context and enforces suspension read-only.</summary>
-    public async Task InvokeAsync(HttpContext context, TenancyDbContext dbContext, TenantContextAccessor tenantContext)
+    public async Task InvokeAsync(HttpContext context, TenancyDbContext dbContext, TenantContextAccessor tenantContext, IMemoryCache cache)
     {
         var tenantIdString = context.Request.Headers["X-Tenant-ID"].FirstOrDefault();
 
@@ -32,17 +35,28 @@ public class TenantContextMiddleware
 
         if (!string.IsNullOrEmpty(tenantIdString) && Guid.TryParse(tenantIdString, out var tenantId))
         {
-            var tenant = await dbContext.Tenants
-                .AsNoTracking()
-                .Where(t => t.Id == tenantId)
-                .Select(t => new { t.Id, t.Status })
-                .FirstOrDefaultAsync();
+            var cacheKey = $"tenant_status:{tenantId}";
 
-            if (tenant is not null)
+            var tenantStatus = await cache.GetOrCreateAsync(cacheKey, async entry =>
             {
-                tenantContext.TenantId = tenant.Id;
+                entry.AbsoluteExpirationRelativeToNow = CacheDuration;
+
+                var tenant = await dbContext.Tenants
+                    .AsNoTracking()
+                    .Where(t => t.Id == tenantId)
+                    .Select(t => new { t.Id, t.Status })
+                    .FirstOrDefaultAsync();
+
+                return tenant is not null
+                    ? new CachedTenantStatus(tenant.Id, tenant.Status)
+                    : null;
+            });
+
+            if (tenantStatus is not null)
+            {
+                tenantContext.TenantId = tenantStatus.Id;
                 tenantContext.HasTenant = true;
-                tenantContext.IsSuspended = tenant.Status == TenantStatus.Suspended;
+                tenantContext.IsSuspended = tenantStatus.Status == TenantStatus.Suspended;
 
                 if (tenantContext.IsSuspended && IsMutatingRequest(context.Request.Method))
                 {
@@ -68,6 +82,11 @@ public class TenantContextMiddleware
     {
         return method is "POST" or "PUT" or "PATCH" or "DELETE";
     }
+
+    /// <summary>
+    /// Cached tenant status to avoid repeated DB queries.
+    /// </summary>
+    private sealed record CachedTenantStatus(Guid Id, TenantStatus Status);
 }
 
 /// <summary>

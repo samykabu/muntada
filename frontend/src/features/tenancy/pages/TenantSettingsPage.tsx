@@ -71,10 +71,10 @@ export function TenantSettingsPage() {
       {activeTab === 'branding' && (
         <BrandingEditor
           tenantId={tenantId}
-          initialLogoUrl={tenant?.logoUrl}
-          initialPrimaryColor={tenant?.primaryColor}
-          initialSecondaryColor={tenant?.secondaryColor}
-          initialCustomDomain={tenant?.customDomain}
+          initialLogoUrl={tenant?.branding?.logoUrl}
+          initialPrimaryColor={tenant?.branding?.primaryColor}
+          initialSecondaryColor={tenant?.branding?.secondaryColor}
+          initialCustomDomain={tenant?.branding?.customDomain}
         />
       )}
 
@@ -90,11 +90,15 @@ export function TenantSettingsPage() {
       {activeTab === 'usage' && usage && (
         <div>
           <h3>Resource Usage</h3>
-          <UsageProgressBar label="Rooms" current={usage.rooms.current} limit={usage.rooms.limit} unit={usage.rooms.unit} />
-          <UsageProgressBar label="Participants" current={usage.participants.current} limit={usage.participants.limit} unit={usage.participants.unit} />
-          <UsageProgressBar label="Storage" current={usage.storageGb.current} limit={usage.storageGb.limit} unit={usage.storageGb.unit} />
-          <UsageProgressBar label="Recording" current={usage.recordingHours.current} limit={usage.recordingHours.limit} unit={usage.recordingHours.unit} />
-          <UsageProgressBar label="API Calls" current={usage.monthlyApiCalls.current} limit={usage.monthlyApiCalls.limit} unit={usage.monthlyApiCalls.unit} />
+          {usage.metrics.map((metric) => (
+            <UsageProgressBar
+              key={metric.resource}
+              label={metric.resource}
+              current={metric.current}
+              limit={metric.limit}
+              unit={metric.unit}
+            />
+          ))}
         </div>
       )}
 
