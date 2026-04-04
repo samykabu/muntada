@@ -8,6 +8,7 @@ COPY backend/src/Muntada.Api/Muntada.Api.csproj backend/src/Muntada.Api/
 COPY backend/src/Muntada.SharedKernel/Muntada.SharedKernel.csproj backend/src/Muntada.SharedKernel/
 COPY backend/src/Modules/Identity/Identity.csproj backend/src/Modules/Identity/
 COPY backend/src/Modules/Tenancy/Tenancy.csproj backend/src/Modules/Tenancy/
+COPY backend/src/Modules/Rooms/Rooms.csproj backend/src/Modules/Rooms/
 COPY aspire/Muntada.ServiceDefaults/Muntada.ServiceDefaults.csproj aspire/Muntada.ServiceDefaults/
 
 RUN dotnet restore backend/src/Muntada.Api/Muntada.Api.csproj
