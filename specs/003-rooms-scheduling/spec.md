@@ -1,843 +1,247 @@
-# Epic 3: Rooms & Scheduling Module
+# Feature Specification: Rooms & Scheduling
 
-**Version:** 1.0
-**Status:** Specification
-**Last Updated:** 2026-04-03
-**Owner:** Product / Engineering
+**Feature Branch**: `003-rooms-scheduling`
+**Created**: 2026-04-04
+**Status**: Draft
+**Input**: User description: "Rooms and Scheduling Module - audio room management and scheduling system for Muntada"
 
----
+## Clarifications
 
-## Overview
+### Session 2026-04-04
 
-This epic implements the core audio room management and scheduling system for Muntada. It provides room template creation, recurring room series, room lifecycle state machine, participant management, and moderator assignment. This module builds on Identity (Epic 1) and Tenancy (Epic 2) to provide multi-tenant, user-aware room experiences.
+- Q: Single moderator or multi-moderator per room? → A: Single moderator — exactly one active moderator per room; handover transfers control to one other person.
+- Q: One-off rooms vs series-only? → A: Support both — organizers can create a one-off room (standalone occurrence with no series parent) or a recurring series.
+- Q: How are timezones handled for scheduling? → A: Organizer's timezone is stored with the series/occurrence; times are displayed in each viewer's local timezone; DST transitions are handled correctly for recurring events.
+- Q: Which tenant roles can create rooms and templates? → A: Only Admin and Owner roles can create templates, rooms, and series; regular members can only join rooms they are invited to.
 
-### Scope
+## User Scenarios & Testing *(mandatory)*
 
-- Room template creation (name, description, settings)
-- Recurring room series (daily/weekly/custom patterns with iCal support)
-- Room occurrence generation from series
-- Room invites (email, direct link, bulk)
-- Room membership validation and access control
-- Room lifecycle state machine: Draft → Scheduled → Live → Grace → Ended → Archived
-- Grace period: starts when last moderator disconnects, configurable timeout (default 5 minutes)
-- Moderator assignment (one moderator per room, with handover capability)
-- Room settings (max participants, listen-only guests, recording policy, transcription)
-- Participant real-time tracking
-- Room analytics (participant count, duration, quality metrics)
+### User Story 1 - Create and Reuse Room Templates (Priority: P1)
 
-### Dependencies
+As a room organizer, I want to create room templates with preset configurations (name, max participants, guest access, recording, transcription settings) so that I can quickly create rooms with consistent settings without re-entering the same options each time.
 
-- **Identity Module (Epic 1)** for user accounts, sessions, authentication, guest access
-- **Tenancy Module (Epic 2)** for tenant context, plan limits, feature toggles, retention policies
-- **Shared Kernel (Epic 0)** for base entity types, ID generation, event publishing
-- **LiveKit OSS** for WebRTC infrastructure and media streaming
-- **SQL Server** for persistent room and scheduling data
-- **Redis** for real-time participant tracking and state
-- **RabbitMQ** for integration events (RoomCreated, RoomLive, RoomEnded, etc.)
+**Why this priority**: Templates are the foundation for all room creation. Without templates, every room must be configured from scratch, making the experience tedious and error-prone.
+
+**Independent Test**: Can be fully tested by creating a template, verifying it appears in the template list, and then using it to pre-fill room creation. Delivers value by reducing room setup time to under 1 minute.
+
+**Acceptance Scenarios**:
+
+1. **Given** I am a tenant Admin or Owner, **When** I create a room template with name, description, and settings, **Then** the template is saved and available for reuse within my tenant.
+2. **Given** a template exists, **When** I create a new room, **Then** I can select the template to pre-populate all settings.
+3. **Given** a template exists, **When** I edit it, **Then** all fields except the name can be modified (name is immutable for audit).
+4. **Given** I set max participants higher than my plan limit, **When** I try to save, **Then** validation rejects the template with a clear error.
+5. **Given** my plan does not allow recording, **When** I try to enable recording on a template, **Then** the option is disabled or rejected.
 
 ---
 
-## User Stories
+### User Story 2 - Create a One-Off Room (Priority: P1)
 
-### US-3.1: Room Template Creation
-**Priority:** P1
-**Story Points:** 13
-**Owner:** Product / Rooms
+As a room organizer, I want to create a single, non-recurring room for an ad-hoc meeting so that I can quickly schedule a one-time session without setting up a series.
 
-As a room organizer, I want to create a room template so that I can reuse settings and quickly create rooms with consistent configurations.
+**Why this priority**: Ad-hoc meetings are the most common use case. Requiring a recurring series for every room adds unnecessary friction.
 
-#### Acceptance Criteria
+**Independent Test**: Can be fully tested by creating a standalone room with a template, setting a scheduled time and moderator, and verifying the occurrence is created without a series parent.
 
-**Given** I am a tenant member
-**When** I navigate to "Rooms" and click "Create Template"
-**Then** I see a form with fields:
-- Template name (required, 3-100 chars)
-- Description (optional)
-- Max participants (default 100, must be <= plan limit)
-- Allow guest access via magic link (toggle, default: true)
-- Allow recording (toggle, default: true if plan allows)
-- Allow transcription (toggle, default: false)
-- Moderator role requirements (optional, e.g., "Owner+ only")
+**Acceptance Scenarios**:
 
-**Given** I fill in the form
-**When** I click "Create template"
-**Then** validation occurs:
-- Name is unique within tenant
-- Max participants <= plan limit
-- Recording allowed only if plan permits
-
-**Given** validation passes
-**When** the template is saved
-**Then** a RoomTemplate record is created with:
-- `Id` (opaque ID, prefix `tpl_`)
-- `TenantId`
-- `Name`
-- `Description`
-- `Settings: { MaxParticipants, AllowGuests, AllowRecording, AllowTranscription }`
-- `CreatedBy` (current user)
-- `CreatedAt`
-- `UpdatedAt`
-
-**Given** the template is created
-**When** I navigate to the room creation flow
-**Then** I can select this template to quickly create rooms with the same settings
-
-**Given** I want to edit a template
-**When** I click "Edit" on an existing template
-**Then** I can modify all fields except name (name is immutable for audit)
-
-#### Definition of Done
-- Room template creation endpoint: `POST /api/tenants/{tenantId}/room-templates`
-- Room template retrieval endpoint: `GET /api/tenants/{tenantId}/room-templates/{templateId}`
-- Room template update endpoint: `PATCH /api/tenants/{tenantId}/room-templates/{templateId}`
-- Template list endpoint: `GET /api/tenants/{tenantId}/room-templates`
-- Validation for plan limits
-- Integration event: `RoomTemplateCreated` published
-- Unit and integration tests
-- Audit logging of template changes
+1. **Given** I am a tenant Admin or Owner, **When** I create a room using a template and set a specific date/time, **Then** a standalone room occurrence is created (not linked to any series).
+2. **Given** I create a one-off room, **When** I view it in the calendar, **Then** it appears as a single event with no series indicator.
+3. **Given** I create a one-off room, **When** I assign a moderator and send invites, **Then** the room follows the same lifecycle and invite flow as series-generated occurrences.
 
 ---
 
-### US-3.2: Room Series & Recurring Schedules
-**Priority:** P1
-**Story Points:** 21
-**Owner:** Product / Scheduling
+### User Story 3 - Schedule Recurring Room Series (Priority: P1)
 
-As a room organizer, I want to create recurring room series (daily standups, weekly syncs) so that I don't have to manually create each room.
+As a room organizer, I want to create recurring room series (daily standups, weekly syncs) with flexible recurrence patterns so that rooms are automatically scheduled without manual intervention.
 
-#### Acceptance Criteria
+**Why this priority**: Recurring rooms are essential for regular meetings. Without this, organizers must manually create each occurrence, which defeats the purpose of a scheduling system.
 
-**Given** I am creating a recurring room series
-**When** I select a template and configure recurrence
-**Then** I see options:
-- Recurrence pattern (Daily, Weekly, Monthly, Custom)
-- For Daily: every N days
-- For Weekly: which days of week (Mon-Sun)
-- For Monthly: which day of month or relative (e.g., "first Monday")
-- For Custom: custom iCal recurrence rule (e.g., `FREQ=WEEKLY;BYDAY=MO,WE`)
+**Independent Test**: Can be fully tested by creating a series with a weekly pattern, verifying occurrences are generated for the next 30 days, and confirming each occurrence appears on the calendar with correct dates/times.
 
-**Given** I select "Weekly on Monday and Wednesday"
-**When** I click "Create series"
-**Then** a RoomSeries record is created with:
-- `Id` (opaque ID, prefix `ser_`)
-- `TenantId`
-- `TemplateId` (or inherit settings from template)
-- `RecurrenceRule` (iCal RRULE format)
-- `StartsAt` (series start date)
-- `EndsAt` (optional, series end date)
-- `Status: Active`
-- `CreatedBy`
-- `CreatedAt`
+**Acceptance Scenarios**:
 
-**Given** the series is created
-**When** a background job runs (every hour or on-demand)
-**Then** it generates RoomOccurrence records for upcoming 30 days:
-- `Id` (opaque ID, prefix `occ_`)
-- `RoomSeriesId`
-- `TenantId`
-- `ScheduledAt` (the occurrence date/time)
-- `Status: Scheduled`
-- `Settings` (inherited from series template)
-
-**Given** occurrences are generated
-**When** I view the calendar
-**Then** I see all upcoming room occurrences with times
-
-**Given** I want to modify a single occurrence
-**When** I click "Edit" on a specific occurrence
-**Then** I can change:
-- Title (override for this instance)
-- Max participants
-- Cancelled (mark as cancelled for this instance)
-
-**Given** I want to edit the series
-**When** I click "Edit series"
-**Then** I can change recurrence pattern and affect future occurrences
-
-**Given** I want to end a series
-**When** I click "End series"
-**Then** the series status transitions to Ended and no future occurrences are generated
-
-#### Definition of Done
-- Room series creation endpoint: `POST /api/tenants/{tenantId}/room-series`
-- Room series update endpoint: `PATCH /api/tenants/{tenantId}/room-series/{seriesId}`
-- Room occurrence generation job (background task)
-- Recurrence rule parsing (use iCal.NET or similar)
-- Calendar view integration
-- Single occurrence override support
-- Integration event: `RoomSeriesCreated`, `RoomOccurrenceGenerated` published
-- Unit and integration tests (recurrence patterns, edge cases)
+1. **Given** I select a template and configure weekly recurrence (e.g., Monday and Wednesday), **When** I create the series, **Then** room occurrences are generated for the next 30 days matching that pattern.
+2. **Given** a series exists with generated occurrences, **When** I view the calendar, **Then** all upcoming occurrences are displayed with correct times.
+3. **Given** I want to cancel a single occurrence, **When** I mark it as cancelled, **Then** only that instance is cancelled; the series and other occurrences are unaffected.
+4. **Given** I edit the series recurrence pattern, **When** I save, **Then** future occurrences are regenerated according to the new pattern.
+5. **Given** I end a series, **When** I confirm, **Then** no new occurrences are generated going forward.
+6. **Given** a series is active, **When** a background process runs, **Then** it generates new occurrences to always maintain 30 days of upcoming rooms.
 
 ---
 
-### US-3.3: Room Lifecycle & State Machine
-**Priority:** P1
-**Story Points:** 21
-**Owner:** Product / Rooms
+### User Story 4 - Room Lifecycle Management (Priority: P1)
 
-As a room organizer, I want to understand and manage the room lifecycle so that I can see which rooms are upcoming, live, and completed.
+As a room organizer, I want rooms to follow a clear lifecycle (Scheduled, Live, Grace, Ended, Archived) so that I always know the current state of any room and the system handles transitions automatically.
 
-#### Acceptance Criteria
+**Why this priority**: The lifecycle state machine is critical for room reliability. It ensures rooms start, end, and archive predictably, and participants always see accurate status.
 
-**Given** a room occurrence is created
-**When** I view its details
-**Then** its status is "Scheduled" and shows:
-- `ScheduledAt` (when the room is scheduled)
-- `Status: Scheduled` (not yet started)
-- Invite link
-- Participant list (empty until room goes live)
+**Independent Test**: Can be fully tested by creating a scheduled room, simulating the first participant joining (transition to Live), simulating moderator disconnect (transition to Grace with countdown), and verifying the room ends after the grace period expires.
 
-**Given** the scheduled time arrives
-**When** the first participant connects to LiveKit
-**Then** the room status transitions to `Live` and:
-- Room connects to LiveKit instance
-- `LiveStartedAt` is recorded
-- Integration event `RoomLive` is published
-- Participants are tracked in real-time (Redis)
+**Acceptance Scenarios**:
 
-**Given** the room is live
-**When** participants join and leave
-**Then** the participant count is updated in real-time (WebSocket broadcast)
-
-**Given** the moderator disconnects while the room is live
-**When** the disconnect event is received
-**Then** the room transitions to `Grace` status:
-- Grace period starts (default 5 minutes, configurable per room)
-- A countdown timer is shown to remaining participants: "Host will end room in 5:00"
-- If moderator reconnects, status returns to `Live`
-- If grace period expires, room transitions to `Ended`
-
-**Given** the room is in Grace period
-**When** the moderator reconnects
-**Then** the room status returns to `Live` and grace timer is cancelled
-
-**Given** all participants disconnect
-**When** the last participant leaves
-**Then** the room may transition to `Grace` (if moderator left) or `Ended` (if last participant left while in Live)
-
-**Given** the room is ended
-**When** the status transitions to Ended
-**Then** recordings are finalized, `LiveEndedAt` is recorded, and integration event `RoomEnded` is published
-
-**Given** a room is ended
-**When** it's retained per policy (e.g., 90 days)
-**Then** it transitions to `Archived` after retention expires
-
-**Given** an archived room
-**When** retention expires
-**Then** the room and related data (recordings, chat, files) are deleted
-
-#### State Machine Diagram
-
-```
-    [Draft] (on creation, if manual override needed)
-       ↓
-   [Scheduled] (once scheduled time is set)
-       ↓
-   [Live] (first participant joins)
-       ↓ (moderator disconnects)
-   [Grace] (5 minute timeout or moderator reconnects)
-       ↓ (timeout expires or last participant leaves)
-   [Ended] (manually or by timeout)
-       ↓ (per retention policy)
-   [Archived] (after retention period, before deletion)
-       ↓ (deletion job runs)
-   [Deleted]
-```
-
-#### Definition of Done
-- Room occurrence status transitions (state machine)
-- Grace period implementation (timer, countdown)
-- Real-time status broadcast (WebSocket)
-- Status update endpoint: `PATCH /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/status`
-- Integration event: `RoomLive`, `RoomEnded`, `RoomArchived` published
-- Unit and integration tests for all state transitions
-- Edge case handling (duplicate transitions, invalid transitions)
+1. **Given** a room occurrence is created, **When** the scheduled time has not arrived, **Then** its status is "Scheduled" with an invite link and scheduled time visible.
+2. **Given** the scheduled time arrives and the first participant connects, **When** the connection is established, **Then** the room transitions to "Live" and the actual start time is recorded.
+3. **Given** the room is live and the moderator disconnects, **When** other participants remain, **Then** the room transitions to "Grace" with a configurable countdown (default 5 minutes) visible to remaining participants.
+4. **Given** the room is in Grace period, **When** the moderator reconnects, **Then** the room returns to "Live" and the countdown is cancelled.
+5. **Given** the room is in Grace period, **When** the countdown expires without moderator reconnection, **Then** the room transitions to "Ended" and recordings are finalized.
+6. **Given** a room has ended, **When** the retention period expires, **Then** the room transitions to "Archived" and eventually its data is deleted per policy.
+7. **Given** a room is in any state, **When** an invalid transition is attempted, **Then** the system rejects it with a clear error.
 
 ---
 
-### US-3.4: Room Invites & Participant Access
-**Priority:** P1
-**Story Points:** 13
-**Owner:** Product / Rooms
+### User Story 5 - Invite Participants to Rooms (Priority: P1)
 
-As a room organizer, I want to invite participants to a room so that they can join when the room is live.
+As a room organizer, I want to invite participants via email, direct link, or guest magic link so that the right people can join my rooms easily.
 
-#### Acceptance Criteria
+**Why this priority**: Rooms are useless without participants. Invitations are the primary mechanism for getting people into rooms.
 
-**Given** I have a scheduled room
-**When** I click "Invite participants"
-**Then** I see options:
-- Invite by email (enter one or more email addresses)
-- Copy direct join link (shareable link, requires login)
-- Generate guest magic link (shareable link, listen-only)
-- Bulk invite from CSV
+**Independent Test**: Can be fully tested by sending an email invite, verifying the recipient receives it, clicking the join link, and confirming the participant is added to the room.
 
-**Given** I enter email addresses
-**When** I click "Send invites"
-**Then** a RoomInvite record is created per invitee with:
-- `Id` (opaque ID, prefix `inv_`)
-- `RoomOccurrenceId`
-- `InvitedEmail`
-- `InvitedBy` (current user)
-- `Status: Pending` (until claimed)
-- `InviteToken` (unique token for tracking)
-- `CreatedAt`
+**Acceptance Scenarios**:
 
-**Given** the invite is created
-**When** an email is sent
-**Then** the invitee receives an email with:
-- Room title and time
-- Sender's name
-- Join link: `/rooms/{occurrenceId}/join?token=...`
-
-**Given** the invitee clicks the join link
-**When** the token is validated
-**Then** if the user is authenticated:
-  - They are added to the room participant list
-  - RoomInvite status transitions to `Accepted`
-  - They are connected to the LiveKit room
-  - If user not authenticated, they are prompted to log in or use guest link
-
-**Given** I share a direct join link
-**When** an authenticated user clicks it
-**Then** they can join immediately (if room is Scheduled or Live)
-
-**Given** I share a guest magic link
-**When** an unauthenticated user clicks it
-**Then** they join with guest permissions (listen-only) without logging in
-
-**Given** I want to revoke an invite
-**When** I click "Revoke" on a pending invite
-**Then** the invite token is invalidated and the invitee cannot use the link
-
-#### Definition of Done
-- Room invite creation endpoint: `POST /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/invites`
-- Room invite list endpoint: `GET /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/invites`
-- Room join endpoint: `GET /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/join`
-- Invite token validation
-- Email delivery integration
-- Bulk invite from CSV
-- Invite revocation
-- Integration event: `RoomInviteSent`, `ParticipantJoined` published
-- Unit and integration tests
+1. **Given** I have a scheduled room, **When** I enter email addresses and send invites, **Then** each invitee receives an email with room details and a join link.
+2. **Given** I copy a direct join link, **When** an authenticated user clicks it, **Then** they can join the room immediately (if Scheduled or Live).
+3. **Given** I generate a guest magic link, **When** an unauthenticated user clicks it, **Then** they join with listen-only permissions without logging in.
+4. **Given** an invite is pending, **When** I revoke it, **Then** the invite token is invalidated and the invitee can no longer use the link.
+5. **Given** I upload a CSV file of email addresses, **When** I send bulk invites, **Then** all listed participants receive invitations.
+6. **Given** the room has ended, **When** someone tries to use an invite link, **Then** they are informed the room has ended.
 
 ---
 
-### US-3.5: Moderator Assignment & Handover
-**Priority:** P1
-**Story Points:** 13
-**Owner:** Product / Rooms
+### User Story 6 - Moderator Assignment and Handover (Priority: P1)
 
-As a room organizer, I want to designate a moderator who controls the room so that I can ensure someone responsible is managing the session.
+As a room organizer, I want to designate a moderator who controls the room and allow moderator handover so that there is always someone responsible managing the session.
 
-#### Acceptance Criteria
+**Why this priority**: A moderator is required for the room lifecycle (Grace period triggers on moderator disconnect). Without moderator management, rooms cannot function properly.
 
-**Given** I am creating a room
-**When** I select the moderator
-**Then** the room requires a designated moderator before it can be scheduled
+**Independent Test**: Can be fully tested by assigning a moderator during room creation, verifying moderator controls are active when they join, and testing handover to another pre-authorized user during a Grace period.
 
-**Given** a room has a designated moderator
-**When** I view room details
-**Then** I see:
-- Moderator name and avatar
-- Badge indicating "Moderator" role in participant list
-- Moderator controls: (mute all, end room, record, etc.)
+**Acceptance Scenarios**:
 
-**Given** the moderator connects to the room
-**When** they join LiveKit
-**Then** they are marked as the active moderator and controls are enabled
-
-**Given** the moderator disconnects
-**When** they leave the room
-**Then** the room transitions to Grace period (as per US-3.3)
-
-**Given** the room is in Grace period
-**When** another user wants to take over as moderator
-**Then** they can click "Become moderator" if they are in the moderator list (pre-authorized)
-
-**Given** the moderator is handed over
-**When** the new moderator accepts
-**Then** the room returns to Live status and the new moderator has controls
-
-**Given** no one is available to take over
-**When** grace period expires
-**Then** the room automatically ends
-
-**Given** I want to change the moderator before the room goes live
-**When** the room is in Scheduled status
-**Then** I can update the moderator designation
-
-#### Definition of Done
-- Moderator assignment during room creation
-- Moderator designation update endpoint: `PATCH /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/moderator`
-- Moderator handover endpoint: `POST /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/moderator/handover`
-- Moderator controls enforced in LiveKit integration
-- Grace period respects moderator status
-- Integration event: `ModeratorAssigned`, `ModeratorHandover` published
-- Unit and integration tests
+1. **Given** I am creating a room, **When** I designate a moderator, **Then** the room is ready to be scheduled with that moderator assigned.
+2. **Given** the moderator connects to the room, **When** they join, **Then** they have full controls (mute all, end room, record).
+3. **Given** the moderator disconnects, **When** the room enters Grace period, **Then** a pre-authorized user can click "Become moderator" to take over.
+4. **Given** a handover occurs, **When** the new moderator accepts, **Then** the room returns to Live and the new moderator has controls.
+5. **Given** the room is in Scheduled status, **When** I want to change the moderator, **Then** I can update the moderator designation before the room goes live.
 
 ---
 
-### US-3.6: Participant Tracking & Real-Time Status
-**Priority:** P1
-**Story Points:** 13
-**Owner:** Product / Rooms
+### User Story 7 - Real-Time Participant Tracking (Priority: P1)
 
-As a room organizer, I want to see real-time participant count and status so that I know who is in the room and manage engagement.
+As a room organizer, I want to see real-time participant count, presence, and audio/video status so that I can manage engagement during the session.
 
-#### Acceptance Criteria
+**Why this priority**: Real-time awareness of who is in the room and their status is essential for moderators to manage sessions effectively.
 
-**Given** a room is live
-**When** I view the room details
-**Then** I see:
-- Participant count (e.g., "12 participants")
-- List of active participants with names and avatars
-- Participant audio/video status (muted/unmuted)
-- Participant join/leave timeline (last 5 events)
+**Independent Test**: Can be fully tested by joining a live room, verifying the participant list updates in real-time as others join/leave, and confirming audio/video status indicators change correctly.
 
-**Given** a participant joins the room
-**When** the LiveKit webhook is received
-**Then** the participant is added to RoomParticipantState:
-- `Id` (opaque ID, prefix `rps_`)
-- `RoomOccurrenceId`
-- `UserId` (or null for guests)
-- `DisplayName`
-- `JoinedAt`
-- `LeftAt` (null if still in room)
-- `AudioState` (Muted, Unmuted)
-- `VideoState` (Off, On)
+**Acceptance Scenarios**:
 
-**Given** participants are in the room
-**When** I open the participant list
-**Then** it updates in real-time via WebSocket:
-- Participant joins → participant added to list
-- Participant leaves → participant removed from list
-- Audio/video changes → status updated
-
-**Given** the room is in Grace period
-**When** I view participant list
-**Then** the countdown timer is shown and participant count is visible
-
-**Given** I want to see participant analytics
-**When** I click "Analytics" (post-room)
-**Then** I see:
-- Total participants joined
-- Peak concurrent participants
-- Participant dwell time (duration in room per user)
-- Audio/video participation rate
-
-#### Definition of Done
-- Real-time participant tracking in Redis
-- WebSocket broadcast for participant list updates
-- LiveKit webhook handler for join/leave/media events
-- Participant state store (RoomParticipantState)
-- Participant list endpoint: `GET /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/participants`
-- Analytics endpoint: `GET /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/analytics`
-- Real-time updates via WebSocket or Server-Sent Events
-- Integration event: `ParticipantJoined`, `ParticipantLeft` published
-- Unit and integration tests
+1. **Given** a room is live, **When** I view the participant list, **Then** I see all active participants with names, avatars, and audio/video status.
+2. **Given** a participant joins, **When** the join event occurs, **Then** they appear in the participant list within 2 seconds.
+3. **Given** a participant leaves, **When** the leave event occurs, **Then** they are removed from the list within 2 seconds.
+4. **Given** the room has ended, **When** I view analytics, **Then** I see total participants, peak concurrent count, and per-participant dwell time.
 
 ---
 
-### US-3.7: Room Settings & Recording Configuration
-**Priority:** P1
-**Story Points:** 13
-**Owner:** Product / Rooms
+### User Story 8 - Recording and Transcription (Priority: P2)
 
-As a room organizer, I want to configure recording and transcription settings so that I can capture and archive room content.
+As a room organizer, I want to record room sessions and optionally transcribe them so that content is captured for later review and sharing.
 
-#### Acceptance Criteria
+**Why this priority**: Recording and transcription add significant value but are not required for the core room experience. Rooms function without them.
 
-**Given** I am creating or editing a room
-**When** I configure settings
-**Then** I see options:
-- Allow recording (toggle, default per plan)
-- Recording visibility (Private to organizer, Shared with participants, Public)
-- Allow transcription (toggle, default false, plan permitting)
-- Transcription language (dropdown, default English)
-- Auto-start recording (toggle, default false)
+**Independent Test**: Can be fully tested by enabling recording on a room, starting a session, verifying the recording is captured after the room ends, and confirming the recording is downloadable with correct visibility settings.
 
-**Given** I enable recording
-**When** the room goes live
-**Then** recording is available:
-- Recording button is visible to moderator
-- Recording status is shown (red dot indicator)
-- Participants are notified "This room is being recorded"
+**Acceptance Scenarios**:
 
-**Given** the room is being recorded
-**When** the recording completes
-**Then** the recording file is stored in MinIO with metadata:
-- `Id` (opaque ID, prefix `rec_`)
-- `RoomOccurrenceId`
-- `TenantId`
-- `S3Path` (MinIO bucket path)
-- `Duration` (seconds)
-- `FileSize` (bytes)
-- `Status: Processing` (queued for transcription/post-processing)
-- `CreatedAt`
-
-**Given** recording is complete
-**When** transcription is enabled
-**Then** a transcription job is queued:
-- Transcription provider (speech-to-text API)
-- Transcription language
-- Output stored as VTT and transcript text file
-
-**Given** transcription completes
-**When** the recording is available
-**Then** users can:
-- Download the recording file
-- View or download transcript
-- Search within transcript
-- Stream recording (not download, if visibility = Private)
-
-**Given** the retention policy expires
-**When** the cleanup job runs
-**Then** the recording and transcript are deleted (if applicable)
-
-#### Definition of Done
-- Room settings update endpoint: `PATCH /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/settings`
-- Recording lifecycle management (start, stop, process)
-- MinIO upload integration
-- Transcription service integration (Google Speech-to-Text, AssemblyAI, etc.)
-- Recording retrieval endpoint: `GET /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/recording`
-- Transcript endpoint: `GET /api/tenants/{tenantId}/room-occurrences/{occurrenceId}/transcript`
-- Recording visibility enforcement
-- Retention policy enforcement
-- Integration event: `RecordingStarted`, `RecordingCompleted`, `TranscriptionCompleted` published
-- Unit and integration tests
+1. **Given** I enable recording on a room, **When** the room goes live, **Then** the moderator can start recording and all participants see a "recording in progress" indicator.
+2. **Given** recording is auto-start enabled, **When** the room goes live, **Then** recording begins automatically without moderator action.
+3. **Given** the room ends with an active recording, **When** the recording is finalized, **Then** I can download or stream the recording based on visibility settings (private, shared, public).
+4. **Given** transcription is enabled, **When** the recording completes, **Then** a transcription job produces a searchable text transcript and VTT file.
+5. **Given** the retention policy expires, **When** the cleanup process runs, **Then** recordings and transcripts are deleted.
 
 ---
 
-## Functional Requirements
-
-### Room Management
-
-**FR-3.1:** Room templates define reusable settings for quick room creation. Templates are tenant-scoped and immutable (name cannot change for audit).
-
-**FR-3.2:** Rooms are either one-off occurrences or generated from a recurring series. Room occurrences are scheduled for specific dates/times.
-
-**FR-3.3:** A room occurrence must have a scheduled start time (`ScheduledAt`). The actual start time (`LiveStartedAt`) is recorded when the first participant joins.
-
-**FR-3.4:** A room must have at least one designated moderator. The moderator is required to be present (or available via handover) for the room to remain in Live status.
-
-### Room Lifecycle
-
-**FR-3.5:** Rooms follow a strict state machine: Draft → Scheduled → Live → Grace → Ended → Archived → Deleted. Invalid transitions are rejected.
-
-**FR-3.6:** A room transitions to Live when the first participant connects to LiveKit. It transitions to Grace when the last moderator disconnects (if other participants remain). Grace period has a configurable timeout (default 5 minutes).
-
-**FR-3.7:** A room transitions to Ended when the grace period expires, all participants leave, or moderator explicitly ends the room.
-
-**FR-3.8:** Archived rooms are retained per the tenant's retention policy, then deleted. Audit logs of deletion are kept for 7 years (PDPL compliance).
-
-### Participant Management
-
-**FR-3.9:** Participants are tracked by LiveKit webhook events (join, leave, media state change). A RoomParticipantState record is created for each participant per room occurrence.
-
-**FR-3.10:** Participants must be invited or have a valid join link/magic link. Unauthenticated guests require a valid magic link and join with listen-only permissions.
-
-**FR-3.11:** Participant permissions are enforced based on role (Member, Guest, Moderator). Members can speak/listen. Guests can only listen. Moderators have full controls.
-
-**FR-3.12:** Participant presence is real-time (Redis). Joining/leaving is broadcast to all connected clients via WebSocket.
-
-### Recording & Transcription
-
-**FR-3.13:** Recording is initiated by moderator or auto-started based on settings. Recording is stored in MinIO S3-compatible storage with configurable visibility (private, shared, public).
-
-**FR-3.14:** Transcription is optional and requires explicit enablement. Transcription language is configurable. Transcription service handles audio-to-text conversion asynchronously.
-
-**FR-3.15:** Recordings are retained per the tenant's retention policy. Expired recordings are deleted per grace period (soft-delete then hard-delete).
-
-### Scheduling & Recurrence
-
-**FR-3.16:** Room series use iCal recurrence rules (RRULE) for maximum flexibility. Supported patterns: daily, weekly, monthly, and custom.
-
-**FR-3.17:** Occurrences are generated in advance (default 30 days ahead) by a background job. Job is idempotent and can be re-run safely.
-
-**FR-3.18:** Single occurrence overrides are supported (cancel, reschedule, modify settings). Overrides affect only that occurrence, not the series.
-
-### Integration Events
-
-**FR-3.19:** The following integration events shall be published to RabbitMQ:
-- `RoomTemplateCreated`
-- `RoomSeriesCreated`
-- `RoomOccurrenceGenerated`
-- `RoomScheduled`
-- `RoomLive`
-- `RoomGraceStarted`
-- `RoomEnded`
-- `RoomArchived`
-- `ParticipantJoined`
-- `ParticipantLeft`
-- `ModeratorAssigned`
-- `ModeratorHandover`
-- `RecordingStarted`
-- `RecordingCompleted`
-- `TranscriptionCompleted`
-
----
-
-## Key Entities
-
-### RoomTemplate
-
-```csharp
-public class RoomTemplate : AggregateRoot<RoomTemplateId>
-{
-    public TenantId TenantId { get; set; }
-    public string Name { get; set; }                       // Immutable
-    public string? Description { get; set; }
-    public RoomSettings Settings { get; set; }
-    public UserId CreatedBy { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-}
-
-public class RoomSettings
-{
-    public int MaxParticipants { get; set; }               // Per plan limit
-    public bool AllowGuestAccess { get; set; }
-    public bool AllowRecording { get; set; }
-    public bool AllowTranscription { get; set; }
-    public string? DefaultTranscriptionLanguage { get; set; }
-    public bool AutoStartRecording { get; set; }
-}
-```
-
-### RoomSeries
-
-```csharp
-public class RoomSeries : AggregateRoot<RoomSeriesId>
-{
-    public TenantId TenantId { get; set; }
-    public RoomTemplateId TemplateId { get; set; }
-    public string Title { get; set; }
-    public string RecurrenceRule { get; set; }             // iCal RRULE
-    public DateTime StartsAt { get; set; }
-    public DateTime? EndsAt { get; set; }
-    public RoomSeriesStatus Status { get; set; }           // Active, Ended
-    public UserId CreatedBy { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-}
-
-public enum RoomSeriesStatus
-{
-    Active,
-    Ended
-}
-```
-
-### RoomOccurrence
-
-```csharp
-public class RoomOccurrence : AggregateRoot<RoomOccurrenceId>
-{
-    public TenantId TenantId { get; set; }
-    public RoomSeriesId? RoomSeriesId { get; set; }        // Null if one-off
-    public string Title { get; set; }
-    public DateTime ScheduledAt { get; set; }
-    public DateTime? LiveStartedAt { get; set; }
-    public DateTime? LiveEndedAt { get; set; }
-    public RoomOccurrenceStatus Status { get; set; }       // Draft, Scheduled, Live, Grace, Ended, Archived
-    public ModeratorAssignment? ModeratorAssignment { get; set; }
-    public RoomSettings Settings { get; set; }
-    public int GracePeriodSeconds { get; set; }            // Default 300 (5 min)
-    public DateTime? GraceStartedAt { get; set; }
-    public UserId CreatedBy { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public ICollection<RoomInvite> Invites { get; set; }
-    public ICollection<RoomParticipantState> Participants { get; set; }
-}
-
-public enum RoomOccurrenceStatus
-{
-    Draft,
-    Scheduled,
-    Live,
-    Grace,
-    Ended,
-    Archived
-}
-
-public class ModeratorAssignment
-{
-    public UserId UserId { get; set; }
-    public DateTime AssignedAt { get; set; }
-    public DateTime? DisconnectedAt { get; set; }
-}
-```
-
-### RoomInvite
-
-```csharp
-public class RoomInvite : AggregateRoot<RoomInviteId>
-{
-    public RoomOccurrenceId RoomOccurrenceId { get; set; }
-    public string? InvitedEmail { get; set; }              // For email invites
-    public UserId? InvitedUserId { get; set; }             // For user invites
-    public string InviteToken { get; set; }                // For tracking
-    public RoomInviteStatus Status { get; set; }           // Pending, Accepted, Revoked, Expired
-    public UserId InvitedBy { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime ExpiresAt { get; set; }                // 7 days default
-}
-
-public enum RoomInviteStatus
-{
-    Pending,
-    Accepted,
-    Revoked,
-    Expired
-}
-```
-
-### RoomParticipantState
-
-```csharp
-public class RoomParticipantState : Entity<RoomParticipantStateId>
-{
-    public RoomOccurrenceId RoomOccurrenceId { get; set; }
-    public UserId? UserId { get; set; }                    // Null for guests
-    public string DisplayName { get; set; }
-    public DateTime JoinedAt { get; set; }
-    public DateTime? LeftAt { get; set; }
-    public MediaState AudioState { get; set; }             // Muted, Unmuted
-    public MediaState VideoState { get; set; }             // Off, On
-    public string? LiveKitParticipantId { get; set; }      // LiveKit track ID
-}
-
-public enum MediaState
-{
-    Muted,
-    Unmuted,
-    Off,
-    On
-}
-```
-
-### Recording
-
-```csharp
-public class Recording : AggregateRoot<RecordingId>
-{
-    public RoomOccurrenceId RoomOccurrenceId { get; set; }
-    public TenantId TenantId { get; set; }
-    public string S3Path { get; set; }                     // MinIO bucket path
-    public long FileSizeBytes { get; set; }
-    public long DurationSeconds { get; set; }
-    public RecordingStatus Status { get; set; }            // Processing, Ready, Failed
-    public RecordingVisibility Visibility { get; set; }    // Private, Shared, Public
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public List<Transcript>? Transcripts { get; set; }
-}
-
-public enum RecordingStatus
-{
-    Processing,
-    Ready,
-    Failed
-}
-
-public enum RecordingVisibility
-{
-    Private,
-    Shared,
-    Public
-}
-
-public class Transcript
-{
-    public string Language { get; set; }
-    public string S3Path { get; set; }                     // MinIO path for VTT/SRT
-    public TranscriptStatus Status { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
-
-public enum TranscriptStatus
-{
-    Processing,
-    Ready,
-    Failed
-}
-```
-
----
-
-## Success Criteria
-
-- Room templates can be created and reused in < 1 minute
-- Recurring series generate occurrences correctly (tested with various patterns)
-- Room state transitions are atomic and never invalid
-- Participants join/leave in real-time (< 2 second latency)
-- Moderator handover works seamlessly with no room interruption
-- Recordings are captured, transcribed, and retrievable within 5 minutes of end
-- Room analytics are accurate (participant count, duration, etc.)
-- All edge cases are handled (concurrent moderator disconnects, grace period expiry during invite)
-- Retention policies delete old rooms automatically with zero data loss
-- Performance: room creation < 200ms, participant join < 500ms, state transitions < 100ms
-
----
-
-## Edge Cases
-
-1. **Concurrent Moderator Disconnect:** If all moderators disconnect simultaneously, grace period starts. If any moderator reconnects within grace period, room returns to Live.
-
-2. **Single Participant Room:** If room has only one participant and it's not the moderator, room can end if they leave. If participant is moderator, grace period applies.
-
-3. **Recording During Grace Period:** If recording is ongoing when grace period starts, recording continues. If grace period expires and last participant leaves, recording ends.
-
-4. **Moderator Handover During Grace:** If moderator hands over to another user during grace, grace period is cancelled and room returns to Live.
-
-5. **Invites Sent After Room Ends:** Invites sent to ended/archived rooms are rejected. Only Scheduled and Live rooms accept new invites.
-
-6. **Series Occurrence Modification:** If an occurrence is overridden (cancelled), it doesn't affect future occurrences. Cancel affects only that instance.
-
-7. **Recurrence Rule Parsing Error:** If iCal RRULE is invalid, series creation fails with clear error. Admin can provide example RRULEs.
-
-8. **Recording File Not Found:** If MinIO is unavailable when recording is queued, recording is retried with exponential backoff. After max retries, admin is alerted.
-
-9. **Transcription Service Timeout:** If transcription takes > 2 hours, it's marked as failed. User can retry or request support.
-
-10. **Grace Period Edge Case:** If participant joins during grace period, grace period is cancelled (room is back to Live). If they leave, grace restarts.
-
----
+### Edge Cases
+
+- What happens when the moderator disconnects? Grace period starts; if the moderator reconnects within the grace period, the room returns to Live.
+- What happens if a participant joins during the Grace period? The grace timer continues; the room returns to Live only when a moderator reconnects.
+- What happens if recording is ongoing when Grace period starts? Recording continues through Grace and stops only when the room ends.
+- What happens when someone tries to join an ended or archived room? They are shown a clear message that the room has ended.
+- What happens if the recurrence rule is invalid? Series creation fails with a clear validation error and example patterns.
+- What happens when a single occurrence is cancelled? Only that instance is affected; the series and other occurrences remain unchanged.
+- What happens if the recording storage service is unavailable? Recording is retried with backoff; after max retries, the organizer is notified of the failure.
+- What happens if transcription takes too long? After a timeout threshold, transcription is marked as failed and the user can retry.
+- What happens if a participant joins during Grace period? Grace continues (only moderator reconnection cancels it), but participant count updates in real-time.
+- What happens when invite is sent to a room that just ended? The invite is rejected; only Scheduled and Live rooms accept new invites.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: System MUST allow tenant Admins and Owners to create room templates with name, description, max participants, guest access, recording, and transcription settings. Regular members MUST NOT have access to create or edit templates, rooms, or series.
+- **FR-002**: System MUST enforce that template names are unique within a tenant and immutable after creation.
+- **FR-003**: System MUST validate room settings against the tenant's plan limits (max participants, recording permissions).
+- **FR-004**: System MUST allow Admins and Owners to create standalone one-off room occurrences (not linked to any series) with a template, scheduled time, and moderator.
+- **FR-005**: System MUST support creating recurring room series with daily, weekly, monthly, and custom recurrence patterns.
+- **FR-006**: System MUST store the organizer's timezone with each series and standalone occurrence. Scheduled times MUST be displayed in each viewer's local timezone. Recurring series MUST handle DST transitions correctly (e.g., a 9 AM weekly meeting stays at 9 AM local time across DST changes).
+- **FR-007**: System MUST generate room occurrences at least 30 days in advance from active series via a background process.
+- **FR-008**: System MUST support single-occurrence overrides (cancel, reschedule, modify settings) without affecting the series.
+- **FR-009**: System MUST enforce a strict room lifecycle state machine: Draft, Scheduled, Live, Grace, Ended, Archived. Invalid transitions MUST be rejected.
+- **FR-010**: System MUST transition a room to "Live" when the first participant connects and record the actual start time.
+- **FR-011**: System MUST transition a room to "Grace" when the moderator disconnects, with a configurable countdown (default 5 minutes).
+- **FR-012**: System MUST return a room from "Grace" to "Live" when a moderator reconnects, cancelling the countdown.
+- **FR-013**: System MUST transition a room to "Ended" when the grace period expires, all participants leave, or the moderator explicitly ends the room.
+- **FR-014**: System MUST support inviting participants by email (single and bulk via CSV), direct join link, and guest magic link.
+- **FR-015**: System MUST validate invite tokens and enforce room state (only Scheduled or Live rooms accept joins).
+- **FR-016**: System MUST allow guest access via magic link with listen-only permissions (no authentication required).
+- **FR-017**: System MUST allow invite revocation, invalidating the invite token immediately.
+- **FR-018**: System MUST require exactly one designated moderator per room before it can be scheduled. Only one moderator is active at a time; handover transfers control to a single replacement.
+- **FR-019**: System MUST support moderator handover to pre-authorized users during Grace period.
+- **FR-020**: System MUST track participant presence in real-time, including join/leave events and audio/video state.
+- **FR-021**: System MUST broadcast participant list changes to all connected clients within 2 seconds.
+- **FR-022**: System MUST support recording with configurable visibility (private to organizer, shared with participants, public).
+- **FR-023**: System MUST support optional transcription that produces searchable text and subtitle files.
+- **FR-024**: System MUST enforce retention policies, automatically archiving and deleting room data (recordings, transcripts) when the policy expires.
+- **FR-025**: System MUST publish integration events for all significant room lifecycle changes (room live, ended, participant joined/left, recording completed, etc.).
+- **FR-026**: System MUST provide post-room analytics: total participants, peak concurrent count, per-participant duration, and audio/video participation rates.
+- **FR-027**: Participant permissions MUST be enforced based on role: Members can speak and listen, Guests can only listen, Moderators have full controls.
+
+### Key Entities
+
+- **Room Template**: A reusable configuration defining room settings (max participants, guest access, recording, transcription). Tenant-scoped with immutable name.
+- **Room Series**: A recurring schedule that generates room occurrences based on recurrence patterns. Stores the organizer's timezone for DST-correct scheduling. Linked to a template for default settings. Can be Active or Ended.
+- **Room Occurrence**: A specific instance of a room at a scheduled time. Can be standalone or part of a series. Follows the lifecycle state machine (Draft through Archived).
+- **Room Invite**: An invitation to a specific room occurrence, sent via email or link. Has a unique token and status (Pending, Accepted, Revoked, Expired).
+- **Moderator Assignment**: The designated moderator for a room occurrence. Required for scheduling. Supports handover to pre-authorized users.
+- **Participant State**: Real-time tracking of a participant in a room, including join/leave times, audio/video status, and display name.
+- **Recording**: A captured audio/video file from a room session, with configurable visibility and optional linked transcripts.
+- **Transcript**: A text representation of a recording in a specified language, available as searchable text and subtitle format.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: Room organizers can create a template and use it to schedule a room in under 1 minute.
+- **SC-002**: Recurring series correctly generate occurrences for all supported patterns (daily, weekly, monthly, custom) with zero missed or duplicate occurrences over 30 days.
+- **SC-003**: Room state transitions are atomic and consistent - no room is ever in an invalid state, verified by zero invalid-transition errors in production.
+- **SC-004**: Participants see real-time updates (joins, leaves, status changes) within 2 seconds of the event occurring.
+- **SC-005**: Moderator handover completes seamlessly with no room interruption - participants experience zero downtime during handover.
+- **SC-006**: Recordings are available for download/streaming within 5 minutes of room ending.
+- **SC-007**: Transcriptions complete within 10 minutes of recording finalization for sessions up to 2 hours.
+- **SC-008**: Room analytics accurately reflect participant count, peak concurrent count, and duration - verified against raw event data.
+- **SC-009**: Retention policies execute automatically, deleting expired room data with zero data loss for non-expired rooms.
+- **SC-010**: 95% of invite recipients successfully join the room using their invite link on the first attempt.
+- **SC-011**: The system supports at least 100 concurrent rooms with up to 100 participants each without degradation in participant tracking or state updates.
 
 ## Assumptions
 
-1. **LiveKit Cluster:** A self-hosted LiveKit cluster is provisioned with API access. LiveKit webhooks are configured and routable to backend.
-
-2. **Webhook Authenticity:** LiveKit webhook requests are verified using shared secret (HMAC-SHA256). Requests without valid signature are rejected.
-
-3. **S3-Compatible Storage:** MinIO is configured with S3-compatible API. All recording/file uploads use S3 SDK.
-
-4. **Transcription Service:** A transcription API (Google Cloud Speech-to-Text, AssemblyAI, etc.) is configured. API key is stored securely in Kubernetes Secrets.
-
-5. **Email Delivery:** Email invites are sent via configured SMTP service. Delivery is assumed within 30 seconds.
-
-6. **iCal Library:** A mature iCal parsing library (iCal.NET, or similar) is used for recurrence rule parsing and validation.
-
-7. **WebSocket Infrastructure:** SignalR or Socket.IO is used for real-time participant updates. All clients maintain a WebSocket connection to receive broadcast updates.
-
-8. **Audit Logging:** All room state changes, participant events, and moderator actions are logged via Serilog with structured context.
-
-9. **Background Jobs:** Recurrence generation, retention cleanup, transcription queuing, and recording finalization are handled by Hangfire or Quartz background job scheduler.
-
-10. **Compliance:** PDPL audit log retention (7 years) is enforced. All user activity in rooms is logged for compliance.
-
----
-
-## Implementation Notes
-
-- **State Machine:** Use a state machine library (NStateMachine, Stateless) to enforce valid transitions. Document all transitions in code comments.
-- **Real-Time Updates:** Use SignalR with connection groups per room (group = `room-{occurrenceId}`). Broadcast all state changes to group.
-- **LiveKit Integration:** Use LiveKit C# SDK for API calls. Webhook handler should be idempotent (retry-safe).
-- **Recording:** Leverage LiveKit's built-in recording (track-based recording) or external recorder (ffmpeg). Store metadata in SQL Server, files in MinIO.
-- **Transcription:** Queue transcription jobs to RabbitMQ or use a service like AssemblyAI with polling. Implement exponential backoff for retries.
-- **Concurrency:** Use optimistic locking (Version field) on RoomOccurrence for concurrent state transitions. Failing transactions are retried client-side.
-- **Testing:** Unit tests for state machine transitions, integration tests for LiveKit webhook handling, load tests for concurrent participant joins.
-- **Documentation:** Provide OpenAPI docs for all endpoints, architecture diagrams for room lifecycle, and runbooks for common operational tasks.
+- An existing Identity module provides user authentication, sessions, and guest access capabilities.
+- An existing Tenancy module provides tenant context, plan limits, feature toggles, and retention policies.
+- A WebRTC infrastructure (LiveKit or equivalent) is provisioned and accessible for media streaming and webhook events.
+- S3-compatible object storage is configured for recording file storage.
+- A speech-to-text service is available for transcription (configured externally).
+- Email delivery infrastructure is available for sending invite emails (delivery within 30 seconds).
+- A mature recurrence rule library is available for parsing standard recurrence patterns.
+- Real-time communication infrastructure (WebSocket/SignalR) is available for broadcasting participant updates.
+- Background job scheduling is available for occurrence generation, retention cleanup, and transcription queuing.
+- Compliance requirements (audit log retention for 7 years) are enforced by the platform.
