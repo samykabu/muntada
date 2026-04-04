@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\..\aspire\Muntada.ServiceDefaults\Muntada.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Muntada.SharedKernel\Muntada.SharedKernel.csproj" />
     <ProjectReference Include="..\Modules\Identity\Identity.csproj" />
+    <ProjectReference Include="..\Modules\Tenancy\Tenancy.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,793 +1,230 @@
-# Epic 2: Tenancy & Plans Module
+# Feature Specification: Tenancy & Plans
 
-**Version:** 1.0
-**Status:** Specification
-**Last Updated:** 2026-04-03
-**Owner:** Platform / Product
+**Feature Branch**: `002-tenancy-plans`
+**Created**: 2026-04-03
+**Status**: Draft
+**Input**: User description: "Tenancy and Plans Module - Multi-tenancy support, plan management, membership, retention policies, and feature toggles"
 
----
+## User Scenarios & Testing *(mandatory)*
 
-## Overview
+### User Story 1 - Tenant Creation & Onboarding (Priority: P1)
 
-This epic implements multi-tenancy support and plan management for Muntada. It enables organizations to be created, branded, members to be managed, and plans to be configured with feature limits, retention policies, and feature toggles. This module builds on Identity (Epic 1) to provide organizational context for all subsequent modules.
+An authenticated user creates a new organization (tenant) to establish a workspace for their team. The onboarding flow collects the organization name, generates a unique URL-safe slug for subdomain access, and optionally captures industry and team size. Upon creation, the user automatically becomes the organization Owner, is assigned a 14-day free trial plan, and can immediately begin creating rooms and inviting others.
 
-### Scope
+**Why this priority**: This is the foundational capability. No other tenancy feature works without the ability to create an organization. It unblocks all downstream user stories.
 
-- Tenant creation and onboarding workflow
-- Tenant branding (logo, colors, custom subdomain)
-- Tenant membership management (invite users, assign roles: Owner, Admin, Member)
-- Plan configuration (room limits, participant limits, storage quotas, recording limits)
-- Retention policies (configurable per tenant: how long to keep recordings, files, chat, audit logs)
-- Feature toggles (per-tenant feature flags for gradual rollout)
-- Tenant-level policy settings (guest access policy, recording policy, file sharing policy)
-- Plan upgrades/downgrades with proration
-- Usage tracking and limit enforcement
+**Independent Test**: Can be fully tested by completing the onboarding form and verifying the organization appears in the dashboard with the creator as Owner and a trial plan active.
 
-### Dependencies
+**Acceptance Scenarios**:
 
-- **Identity Module (Epic 1)** for user accounts, sessions, and authentication
-- **Shared Kernel (Epic 0)** for base entity types, ID generation, event publishing
-- **SQL Server** for persistent tenant and plan data
-- **RabbitMQ** for integration events (TenantCreated, PlanUpgraded, etc.)
+1. **Given** I am an authenticated user, **When** I submit the tenant creation form with a valid organization name, **Then** a tenant is created with a unique slug, I am assigned as Owner, a 14-day trial plan is activated, and I am redirected to the tenant dashboard.
+2. **Given** I am creating a tenant, **When** I enter a slug that is already taken or uses a reserved word (e.g., "admin", "api", "www"), **Then** the system rejects it with a clear error and suggests alternatives.
+3. **Given** a tenant is created, **When** I access the dashboard, **Then** I can immediately create rooms and invite team members.
+4. **Given** I am creating a tenant, **When** I provide an organization name with invalid characters or length outside 3-100 characters, **Then** validation errors are displayed inline before submission.
 
 ---
 
-## User Stories
+### User Story 2 - Tenant Membership & Roles (Priority: P1)
 
-### US-2.1: Tenant Creation & Onboarding
-**Priority:** P1
-**Story Points:** 13
-**Owner:** Platform / Product
+A tenant owner manages team members by inviting users via email, assigning roles (Owner, Admin, Member), updating roles, and removing members. Invitations are sent via email with a time-limited link. Role-based access controls ensure Owners have full control, Admins can manage rooms and members, and Members can participate but not administer.
 
-As a user, I want to create a new tenant (organization) so that I can establish a workspace for my team and configure it for our needs.
+**Why this priority**: Membership management is essential for team collaboration. Without inviting members and controlling access, the tenant is unusable for its core purpose.
 
-#### Acceptance Criteria
+**Independent Test**: Can be fully tested by inviting a user via email, verifying they receive the invite, accepting it, and confirming their role grants appropriate access.
 
-**Given** I am an authenticated user
-**When** I navigate to the onboarding flow
-**Then** I see a form asking for:
-- Organization name (required, 3-100 characters)
-- Organization slug/subdomain (auto-generated from name, editable, unique)
-- Industry/use case (optional dropdown)
-- Team size (optional)
+**Acceptance Scenarios**:
 
-**Given** I fill in the form
-**When** I submit
-**Then** the system validates:
-- Name is unique within reasonable scope (can be duplicated, slug must be unique)
-- Slug contains only lowercase alphanumeric and hyphens
-- Slug is not reserved (e.g., "admin", "api", "www")
-- Slug is not already taken
-
-**Given** validation passes
-**When** the form is submitted
-**Then** a Tenant record is created with:
-- `Id` (opaque ID, prefix `tnt_`)
-- `Name`
-- `Slug` (unique, used for subdomain)
-- `CreatedBy` (current user ID)
-- `Status: Active`
-- `BillingStatus: Trial` (default: 14-day free trial)
-- `CreatedAt`
-
-**Given** the tenant is created
-**When** the user is returned to the dashboard
-**Then** they are automatically added as TenantMembership with Role: Owner
-
-**Given** the tenant is created
-**When** the onboarding continues
-**Then** the user is prompted to:
-- Upload a logo (optional)
-- Choose brand colors (optional)
-- Invite team members (optional)
-
-**Given** the user completes onboarding
-**When** they access the tenant dashboard
-**Then** they can immediately create rooms and invite others
-
-#### Definition of Done
-- Tenant creation endpoint: `POST /api/tenants`
-- Tenant retrieval endpoint: `GET /api/tenants/{tenantId}`
-- Tenant slug validation (uniqueness, format)
-- Auto-assignment of creator as Owner
-- Default plan assignment (Trial plan)
-- Integration event: `TenantCreated` published
-- Unit and integration tests
-- Validation of all input fields
-- Error handling for duplicate slugs
+1. **Given** I am a tenant Owner, **When** I invite a user by email with the role "Member", **Then** the invitee receives an email with a link valid for 7 days, and upon acceptance their membership becomes active with the assigned role.
+2. **Given** I am a tenant Owner, **When** I change a member's role from Member to Admin, **Then** their permissions are updated immediately and they can manage rooms.
+3. **Given** I am a tenant Owner attempting to remove the only Owner, **When** I submit the removal, **Then** the system prevents it with the error "At least one Owner must remain."
+4. **Given** an invite is already pending for an email address, **When** I send a new invite to the same address, **Then** the old invite is cancelled and replaced with the new one.
+5. **Given** I am an Admin, **When** I try to change another member's role to Owner, **Then** the system rejects it because only Owners can assign Owner role.
 
 ---
 
-### US-2.2: Tenant Branding & Customization
-**Priority:** P2
-**Story Points:** 8
-**Owner:** Platform / Product
+### User Story 3 - Plan Management & Limit Enforcement (Priority: P1)
 
-As a tenant owner, I want to customize my organization's branding so that the platform reflects our brand identity to our team and guests.
+The product team defines tiered plans (Free, Trial, Starter, Professional, Enterprise) with specific resource limits: rooms per month, participants per room, storage capacity, recording hours, and feature permissions. Tenants are assigned plans, and the system enforces hard limits at resource creation time, preventing usage beyond quota with clear upgrade prompts.
 
-#### Acceptance Criteria
+**Why this priority**: Plan limits define the business model and revenue structure. Enforcement ensures fair resource allocation and drives upgrade conversions.
 
-**Given** I am a tenant owner
-**When** I navigate to the branding settings
-**Then** I see editable fields for:
-- Organization name
-- Logo (image upload, max 5MB)
-- Primary color (hex color picker)
-- Secondary color (hex color picker)
-- Custom domain (optional, for subdomain)
+**Independent Test**: Can be fully tested by assigning a plan to a tenant, consuming resources up to the limit, and verifying that exceeding the limit is blocked with an appropriate message.
 
-**Given** I upload a logo
-**When** the upload completes
-**Then** the image is:
-- Stored in MinIO with a unique key (e.g., `tenants/{tenantId}/logo.png`)
-- Resized to standard sizes (32px, 64px, 128px, 256px)
-- Made accessible via a public URL with CDN caching
+**Acceptance Scenarios**:
 
-**Given** I set custom colors
-**When** I save
-**Then** the colors are validated as valid hex format
-
-**Given** I set a custom subdomain
-**When** I save
-**Then** the system checks:
-- Subdomain is unique
-- Subdomain is not reserved
-- DNS records point to Muntada servers
-
-**Given** I complete branding customization
-**When** I navigate to a room as a guest
-**Then** the room UI displays:
-- Custom logo in the header
-- Custom colors in buttons, headers, etc.
-- Organization name in page title
-
-#### Definition of Done
-- Tenant branding update endpoint: `PATCH /api/tenants/{tenantId}/branding`
-- Logo upload with MinIO integration
-- Image resizing pipeline (via background job)
-- Color validation (hex format)
-- Subdomain validation and uniqueness check
-- DNS configuration guidance (documentation)
-- CDN caching headers for logo
-- Unit and integration tests
+1. **Given** a tenant is on the Starter plan with a limit of 10 rooms per month, **When** they attempt to create an 11th room, **Then** room creation is rejected with "Room limit reached for this month. Upgrade your plan or contact support."
+2. **Given** a room has reached its participant limit, **When** an additional participant attempts to join, **Then** they are rejected with "Room is at capacity."
+3. **Given** a plan does not allow recording, **When** a user attempts to record, **Then** the recording option is disabled and a message says "Recording is not available in your plan."
+4. **Given** a tenant's storage usage exceeds the plan quota, **When** a recording completes, **Then** storage is rejected with "Storage limit exceeded. Upgrade your plan."
 
 ---
 
-### US-2.3: Tenant Membership & Roles
-**Priority:** P1
-**Story Points:** 13
-**Owner:** Platform / Product
+### User Story 4 - Plan Upgrades & Downgrades (Priority: P2)
 
-As a tenant owner, I want to manage team members and their roles so that I can control who has access to what.
+A tenant owner can upgrade or downgrade their plan from the billing settings. Upgrades take effect immediately with pro-rated charges. Downgrades can be immediate or scheduled for the next billing cycle. If a downgrade would reduce limits below current usage, the user is warned and given options to reduce usage, proceed over-quota, or cancel.
 
-#### Acceptance Criteria
+**Why this priority**: Plan changes are essential for revenue growth and customer flexibility, but the system can function on a fixed plan initially.
 
-**Given** I am a tenant owner
-**When** I navigate to the members management page
-**Then** I see a list of all members with:
-- Name, email, role (Owner, Admin, Member)
-- Date joined
-- Last activity
-- Action buttons (Edit role, Remove)
+**Independent Test**: Can be fully tested by upgrading a plan and verifying new limits apply immediately, then downgrading and confirming the warning flow when usage exceeds new limits.
 
-**Given** I want to invite a new member
-**When** I click "Invite member"
-**Then** a dialog appears asking for:
-- Email address (required)
-- Role (Owner, Admin, Member) (default: Member)
-- Notification message (optional)
+**Acceptance Scenarios**:
 
-**Given** I submit the invite
-**When** the system processes it
-**Then** a TenantMembership is created with:
-- `TenantId`
-- `UserId` (or `InvitedEmail` if user doesn't exist)
-- `Role` (Owner, Admin, or Member)
-- `Status: Pending` (until user accepts invite)
-- `InvitedAt`
-- `InvitedBy` (current user)
-
-**Given** the invite is created
-**When** an email is sent
-**Then** the invitee receives an email with:
-- Link to accept invite: `/join-tenant?token=...`
-- Notification message (if provided)
-- Sender's name and email
-
-**Given** the invitee clicks the link
-**When** they log in
-**Then** the TenantMembership status transitions to Active
-
-**Given** I want to change a member's role
-**When** I select a new role in the member list
-**Then** the system validates:
-- I am Owner or Admin
-- I cannot change my own role to non-Owner
-- At least one Owner must remain
-
-**Given** validation passes
-**When** the role is saved
-**Then** the member's access is updated immediately
-
-**Given** I want to remove a member
-**When** I click "Remove"
-**Then** a confirmation dialog appears: "This user will lose access. Confirm?"
-
-**Given** I confirm removal
-**When** the member is removed
-**Then** the TenantMembership status transitions to Inactive and the member can no longer access the tenant
-
-#### Definition of Done
-- Member list endpoint: `GET /api/tenants/{tenantId}/members`
-- Member invite endpoint: `POST /api/tenants/{tenantId}/members/invite`
-- Member role update endpoint: `PATCH /api/tenants/{tenantId}/members/{memberId}/role`
-- Member removal endpoint: `DELETE /api/tenants/{tenantId}/members/{memberId}`
-- Invite token generation and validation
-- Email invite with customizable message
-- Role validation (at least one Owner required)
-- Integration event: `TenantMembershipCreated` published
-- Audit logging of membership changes
-- Unit and integration tests
+1. **Given** I am on the Starter plan, **When** I upgrade to Professional mid-billing-cycle, **Then** the new limits apply immediately and I am charged a pro-rated amount for the remaining days.
+2. **Given** I am on Professional and using 80GB of 100GB storage, **When** I downgrade to Starter with 50GB limit, **Then** I see a warning that current usage exceeds the new limit and I can choose to proceed, reduce usage, or cancel.
+3. **Given** two admins attempt a plan change simultaneously, **When** the second request arrives, **Then** it fails with "Plan was just changed. Please refresh."
 
 ---
 
-### US-2.4: Plan Management & Limits
-**Priority:** P1
-**Story Points:** 21
-**Owner:** Product / Billing
+### User Story 5 - Usage Tracking & Reporting (Priority: P2)
 
-As a product team, I want to define plans with different feature limits so that we can offer tiered pricing and resource allocation.
+A tenant admin views a usage dashboard showing current consumption against plan limits: room count, participant peaks, storage used, recording hours, and data retention settings. Visual progress bars change color at 80%, 95%, and 100% thresholds. Alerts are sent to tenant owners when usage approaches or exceeds limits. Historical usage trends over 30 days are available.
 
-#### Acceptance Criteria
+**Why this priority**: Usage visibility drives informed upgrade decisions and prevents surprise limit blocks, but the core system works without a dashboard.
 
-**Given** I am the product team
-**When** I define a plan
-**Then** I specify:
-- Plan name (e.g., "Starter", "Professional", "Enterprise")
-- Plan tier (Free, Trial, Paid)
-- Limits:
-  - `MaxRoomsPerMonth` (e.g., 100)
-  - `MaxParticipantsPerRoom` (e.g., 100)
-  - `MaxStorageGB` (e.g., 100)
-  - `MaxRecordingHoursPerMonth` (e.g., 10)
-  - `MaxDataRetentionDays` (e.g., 90)
-  - Feature permissions (e.g., `AllowRecording`, `AllowGuestAccess`, `AllowCustomBranding`)
+**Independent Test**: Can be fully tested by consuming resources and verifying the dashboard displays accurate metrics, progress bars reflect correct percentages, and alerts fire at thresholds.
 
-**Given** plans are defined
-**When** a tenant is created
-**Then** they are assigned a default plan (e.g., Trial plan)
+**Acceptance Scenarios**:
 
-**Given** a tenant has an active plan
-**When** they attempt to create a room
-**Then** the system checks:
-- Current room count < `MaxRoomsPerMonth`
-- If limit exceeded, room creation is rejected with error "Room limit reached for this month"
-
-**Given** a room is live
-**When** a participant joins
-**Then** the system checks:
-- Current participant count < `MaxParticipantsPerRoom`
-- If limit exceeded, participant is rejected with error "Room is at capacity"
-
-**Given** a recording completes
-**When** it's stored
-**Then** the system checks:
-- Current usage + recording size <= `MaxStorageGB`
-- If limit exceeded, recording is rejected with error "Storage limit exceeded. Upgrade your plan."
-
-**Given** a plan defines `AllowRecording: false`
-**When** a user attempts to record a room
-**Then** the recording button is disabled and an error "Recording is not available in your plan" is shown
-
-**Given** a plan's retention period is 90 days
-**When** the background cleanup job runs
-**Then** recordings, files, and chat older than 90 days are permanently deleted
-
-#### Definition of Done
-- Plan definition schema (database or configuration)
-- Plan assignment endpoint: `POST /api/tenants/{tenantId}/plan`
-- Plan retrieval endpoint: `GET /api/tenants/{tenantId}/plan`
-- Usage tracking and enforcement at room/recording creation
-- Limit check logic (reusable utility)
-- Storage quota enforcement
-- Retention policy enforcement (background job)
-- Audit logging of plan changes
-- Unit and integration tests
+1. **Given** I am a tenant admin, **When** I view the usage dashboard, **Then** I see current usage vs. limits for all resource types with percentage indicators and colored progress bars.
+2. **Given** storage usage reaches 95%, **When** the threshold is breached, **Then** all tenant owners receive a warning notification.
+3. **Given** I click "View history", **When** the history loads, **Then** I see daily trends for rooms, storage, and recording hours over the past 30 days.
 
 ---
 
-### US-2.5: Usage Tracking & Reporting
-**Priority:** P2
-**Story Points:** 13
-**Owner:** Product / Analytics
+### User Story 6 - Retention Policies & Data Lifecycle (Priority: P2)
 
-As a tenant admin, I want to see my usage against plan limits so that I can manage resources and plan upgrades.
+A tenant owner configures retention periods for different data types: recordings, chat messages, files, audit logs, and user activity logs. The system enforces minimum retention for audit logs (7 years for compliance). Data past its retention period is soft-deleted with a 7-day grace period for restoration, then permanently deleted with an audit trail preserved.
 
-#### Acceptance Criteria
+**Why this priority**: Retention policies are critical for compliance and data governance, but default retention periods allow the system to function without custom configuration initially.
 
-**Given** I am a tenant admin
-**When** I navigate to the usage dashboard
-**Then** I see:
-- Room count (current month): X / Y limit
-- Participant peak: X
-- Storage used: X / Y GB
-- Recording hours used: X / Y hours
-- Data retention setting
+**Independent Test**: Can be fully tested by setting a short retention period, waiting for the cleanup cycle, verifying data is soft-deleted, restoring within grace period, and confirming permanent deletion after grace.
 
-**Given** the dashboard is displayed
-**When** I hover over each metric
-**Then** I see:
-- Current usage
-- Limit
-- % of quota used
-- Visual progress bar (color changes at 80%, 95%, 100%)
+**Acceptance Scenarios**:
 
-**Given** I exceed a limit (e.g., 95% of storage)
-**When** the threshold is breached
-**Then** a warning notification is sent to all tenant owners
-
-**Given** a limit is exceeded (100%)
-**When** the next resource creation is attempted
-**Then** the request is rejected and user is prompted to upgrade or contact support
-
-**Given** I want to see historical usage
-**When** I click "View history"
-**Then** I see a graph showing:
-- Daily room count
-- Daily storage usage
-- Daily recording hours
-- Trends over 30 days
-
-#### Definition of Done
-- Usage dashboard endpoint: `GET /api/tenants/{tenantId}/usage`
-- Usage history endpoint: `GET /api/tenants/{tenantId}/usage/history`
-- Usage tracking in background jobs
-- Threshold alerts (email notifications)
-- GraphQL/REST API for usage metrics
-- Unit and integration tests
+1. **Given** I set recording retention to 30 days, **When** a recording is 31 days old and the cleanup cycle runs, **Then** it is marked as scheduled for deletion and enters a 7-day grace period.
+2. **Given** data is in its grace period, **When** I click "Restore", **Then** the data is immediately available again.
+3. **Given** the grace period expires, **When** permanent deletion occurs, **Then** the data is removed and an audit record is preserved documenting what was deleted, when, and by whom.
+4. **Given** I attempt to set audit log retention below 7 years, **When** I save, **Then** the system rejects it with "Audit log retention must be at least 7 years for compliance."
+5. **Given** retention is reduced from 90 to 30 days, **When** the policy is saved, **Then** existing data older than 30 days is immediately scheduled for deletion.
 
 ---
 
-### US-2.6: Retention Policies & Data Lifecycle
-**Priority:** P2
-**Story Points:** 13
-**Owner:** Platform / Compliance
+### User Story 7 - Tenant Branding & Customization (Priority: P2)
 
-As a compliance officer, I want to define retention policies for my organization so that we can meet legal and operational requirements.
+A tenant owner customizes the organization's visual identity: uploading a logo, setting brand colors, and optionally configuring a custom subdomain. The branding is displayed consistently across all rooms and guest-facing pages, reflecting the organization's identity.
 
-#### Acceptance Criteria
+**Why this priority**: Branding enhances the professional appearance and white-label experience, but the platform functions fully with default branding.
 
-**Given** I am a tenant owner
-**When** I navigate to data retention settings
-**Then** I see configurable retention periods for:
-- Recordings (default: 90 days)
-- Chat messages (default: 1 year)
-- Files (default: 1 year)
-- Audit logs (default: 7 years for compliance)
-- User activity logs (default: 1 year)
+**Independent Test**: Can be fully tested by uploading a logo, setting colors, and verifying they appear on the room UI and guest pages.
 
-**Given** I set retention period to 30 days for recordings
-**When** I save
-**Then** the system validates:
-- Retention is between 1 day and max (configurable, e.g., 10 years)
-- If less than plan's default, plan is checked for feature flag
+**Acceptance Scenarios**:
 
-**Given** retention period is configured
-**When** a background job runs daily at midnight
-**Then** it:
-- Identifies data older than retention period
-- Marks data as "scheduled for deletion" (soft delete)
-- After 7-day grace period, permanently deletes data
-- Logs deletion in audit trail
-
-**Given** data is scheduled for deletion
-**When** a user requests it during grace period
-**Then** they can restore it with a button "Restore" in the UI
-
-**Given** permanent deletion occurs
-**When** the data is gone
-**Then** a record is kept in audit logs (what was deleted, when, by whom)
-
-#### Definition of Done
-- Retention policy update endpoint: `PATCH /api/tenants/{tenantId}/retention-policies`
-- Retention policy retrieval endpoint: `GET /api/tenants/{tenantId}/retention-policies`
-- Data lifecycle management background job
-- Grace period implementation (soft delete then hard delete)
-- Audit logging of deletions
-- Restoration capability during grace period
-- Unit and integration tests
+1. **Given** I am a tenant owner, **When** I upload a logo (max 5MB image), **Then** it is stored, resized to standard sizes (32px, 64px, 128px, 256px), and displayed in the header across all tenant pages.
+2. **Given** I set primary and secondary colors, **When** I save, **Then** the colors are validated as hex format and applied to buttons, headers, and UI accents.
+3. **Given** I configure a custom subdomain, **When** I save, **Then** the system validates uniqueness and that it is not a reserved word.
 
 ---
 
-### US-2.7: Feature Toggles & Gradual Rollout
-**Priority:** P3
-**Story Points:** 8
-**Owner:** Product / Engineering
+### User Story 8 - Feature Toggles & Gradual Rollout (Priority: P3)
 
-As a product team, I want to use feature toggles to gradually enable features across tenants so that we can control rollout and gather feedback.
+The product team controls feature availability per tenant using feature toggles. Toggles support multiple scopes: specific tenants, user roles, geographic regions, and percentage-based canary rollouts. Disabled features are hidden from the UI and return appropriate errors from the API. Toggle changes take effect within minutes.
 
-#### Acceptance Criteria
+**Why this priority**: Feature toggles enable safe rollouts and A/B testing, but all features can launch fully enabled without this capability initially.
 
-**Given** a new feature is developed (e.g., "LiveKit 3D Visualization")
-**When** the feature is deployed
-**Then** it's disabled by default via a feature toggle
+**Independent Test**: Can be fully tested by creating a toggle, enabling it for a specific tenant, and verifying the feature is accessible for that tenant but blocked for others.
 
-**Given** I am the product team
-**When** I want to enable the feature for select tenants
-**Then** I can:
-- Enable for specific tenants (list of IDs)
-- Enable for specific user roles (Owner, Admin, Member)
-- Enable for users in specific regions
-- Enable for % of tenants (canary: 5%, then 25%, then 100%)
+**Acceptance Scenarios**:
 
-**Given** a user is part of a tenant
-**When** they make a request
-**Then** the middleware checks feature flags:
-- If feature is disabled, feature UI is hidden or API returns 403
-
-**Given** a feature toggle is enabled for a tenant
-**When** the feature is accessed
-**Then** the user sees the feature and can use it
-
-**Given** a feature toggle is disabled for a tenant
-**When** the user attempts to access the feature
-**Then** an error "This feature is not available in your plan or region" is shown
-
-#### Definition of Done
-- Feature toggle storage (database or Redis)
-- Feature flag check middleware
-- Admin API for feature toggle management (internal)
-- Feature flag evaluation logic (supports %, users, regions, tenants)
-- Audit logging of feature toggle changes
-- Documentation with examples
-- Unit and integration tests
+1. **Given** a new feature is deployed with a toggle set to disabled, **When** a user in a non-enabled tenant requests the feature, **Then** the UI hides the feature and the API returns "This feature is not available in your plan or region."
+2. **Given** a feature toggle is enabled for a specific tenant, **When** a user in that tenant accesses the feature, **Then** it works normally.
+3. **Given** a feature is enabled at 5% canary, **When** requests arrive, **Then** approximately 5% of tenants see the feature enabled.
+4. **Given** a feature is disabled while a user is actively using it, **When** their current request completes, **Then** the next request is rejected gracefully.
 
 ---
 
-### US-2.8: Plan Upgrades & Downgrades
-**Priority:** P2
-**Story Points:** 13
-**Owner:** Billing / Product
-
-As a tenant owner, I want to upgrade or downgrade my plan so that I can adjust my resource allocation based on needs.
-
-#### Acceptance Criteria
-
-**Given** I am a tenant owner
-**When** I navigate to billing settings
-**Then** I see:
-- Current plan (e.g., "Professional")
-- Next billing date
-- Current charges this month
-- Available plans with feature comparison
-
-**Given** I select a higher-tier plan
-**When** I click "Upgrade"
-**Then** a confirmation dialog shows:
-- New plan features
-- Price difference
-- Pro-rated charges (if billing period in progress)
-
-**Given** I confirm upgrade
-**When** the plan change is processed
-**Then** the new plan is immediately active and limits are updated
-
-**Given** I select a lower-tier plan
-**When** I click "Downgrade"
-**Then** a confirmation dialog shows:
-- Warning if current usage exceeds new plan limits
-- Downgrade date options (immediate or at next billing cycle)
-
-**Given** I confirm downgrade with "Immediate" option
-**When** the plan change is processed
-**Then** if current usage exceeds new limits, the user is warned and given options:
-- Keep current limit usage (may be over quota)
-- Reduce usage (clean up data)
-- Cancel downgrade
-
-**Given** a plan change is processed
-**When** the integration event is published
-**Then** the Billing module receives `PlanUpgraded` or `PlanDowngraded` event
-
-#### Definition of Done
-- Plan upgrade endpoint: `POST /api/tenants/{tenantId}/plan/upgrade`
-- Plan downgrade endpoint: `POST /api/tenants/{tenantId}/plan/downgrade`
-- Plan feature comparison (UI component)
-- Pro-ration calculation logic
-- Usage validation during downgrade
-- Integration event: `PlanUpgraded`, `PlanDowngraded` published
-- Audit logging of plan changes
-- Unit and integration tests
-
----
-
-## Functional Requirements
-
-### Tenant Management
-
-**FR-2.1:** Each tenant shall be uniquely identified by a Tenant ID (opaque, prefix `tnt_`). A tenant may also have a unique slug for subdomain usage (e.g., `company.muntada.com`).
-
-**FR-2.2:** A tenant shall have a billing status (Active, Trial, Suspended, Cancelled) managed by the Billing module. The Tenancy module enforces restrictions based on status (e.g., Trial tenants cannot create unlimited rooms).
-
-**FR-2.3:** Tenant data shall be isolated at the SQL Server schema level. Each tenant's data lives in the same module schemas but is filtered via TenantId foreign key and row-level security policies (if enabled).
-
-**FR-2.4:** A tenant shall support custom branding including logo (stored in MinIO), colors (hex), and custom subdomain (DNS must be configured). Branding is optional and defaults to Muntada brand.
-
-### Membership Management
-
-**FR-2.5:** Tenant membership shall support three roles with distinct permissions:
-- **Owner:** Full control, can manage members, billing, and delete tenant
-- **Admin:** Can manage rooms, members (except ownership), and view billing
-- **Member:** Can create and participate in rooms, no admin access
-
-**FR-2.6:** A tenant must have at least one Owner at all times. Ownership cannot be transferred by removing the last Owner. Only the last Owner can be removed if they request account deletion.
-
-**FR-2.7:** User invitations shall be sent via email with a time-limited link (valid for 7 days). Invitations can be resent and revoked before acceptance.
-
-**FR-2.8:** Users can belong to multiple tenants. Each user's role is independent per tenant. Tenant switching is managed via JWT claims or explicit `X-Tenant-ID` header.
-
-### Plan & Limits
-
-**FR-2.9:** A plan defines hard limits on resources: MaxRoomsPerMonth, MaxParticipantsPerRoom, MaxStorageGB, MaxRecordingHoursPerMonth. Exceeding a hard limit prevents resource creation/usage.
-
-**FR-2.10:** Plan tiers are: Free (limited), Trial (14 days, full features), Paid (multiple levels), Enterprise (custom). Plan assignment is immutable until upgrade/downgrade.
-
-**FR-2.11:** Usage is tracked and aggregated daily via background jobs. Usage metrics are available in real-time via cache (Redis). Hard enforcement prevents over-quota usage.
-
-**FR-2.12:** When a plan is upgraded immediately, any overage charges are calculated pro-rata and billed immediately (handled by Billing module). When downgraded, the effective date is configurable (immediate or next billing cycle).
-
-### Retention & Data Lifecycle
-
-**FR-2.13:** Retention policies are configurable per tenant and data type. Allowed ranges: 1 day to 10 years (configurable per data type). Audit logs must retain minimum 7 years (for PDPL compliance).
-
-**FR-2.14:** Data deletion follows a soft-delete-then-hard-delete pattern: (1) scheduled for deletion, (2) 7-day grace period, (3) permanent deletion. Audit trail of deletions is preserved.
-
-**FR-2.15:** Deletion jobs run daily at off-peak hours. Failed deletions are retried with exponential backoff. Deletion errors are alerted to ops team.
-
-### Feature Toggles
-
-**FR-2.16:** Feature toggles are stored in a centralized location (database or Redis). Each toggle can be configured per tenant, per user role, per region, or as a percentage rollout.
-
-**FR-2.17:** Feature toggle checks are enforced in middleware and at the API level. Disabled features return 403 Forbidden with message "Feature not available."
-
-**FR-2.18:** Feature toggle evaluation is cached in Redis for performance. Cache TTL is configurable (default 5 minutes). Toggle changes take effect within cache TTL.
-
-### Integration Events
-
-**FR-2.19:** The following integration events shall be published to RabbitMQ:
-- `TenantCreated` (when new tenant is created)
-- `TenantMembershipCreated` (when user joins tenant)
-- `TenantMembershipRemoved` (when user is removed)
-- `PlanAssigned` (when plan is set or changed)
-- `UsageLimitExceeded` (when usage hits 95% or 100% of limit)
-- `RetentionPolicyChanged` (when retention is updated)
-- `FeatureToggleChanged` (when feature is enabled/disabled for tenant)
-
----
-
-## Key Entities
-
-### Tenant
-
-```csharp
-public class Tenant : AggregateRoot<TenantId>
-{
-    public string Name { get; set; }                       // Organization name
-    public string Slug { get; set; }                       // Unique, URL-safe slug
-    public TenantBranding Branding { get; set; }           // Logo, colors, etc.
-    public TenantStatus Status { get; set; }               // Active, Suspended, Deleted
-    public BillingStatus BillingStatus { get; set; }       // Active, Trial, Cancelled
-    public DateTime? TrialEndsAt { get; set; }             // Trial expiration
-    public UserId CreatedBy { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public ICollection<TenantMembership> Memberships { get; set; }
-    public Plan Plan { get; set; }                         // Current plan
-    public RetentionPolicy RetentionPolicy { get; set; }
-}
-
-public class TenantBranding
-{
-    public string? LogoUrl { get; set; }                   // MinIO URL
-    public string? PrimaryColor { get; set; }              // Hex color
-    public string? SecondaryColor { get; set; }            // Hex color
-    public string? CustomDomain { get; set; }              // Optional CNAME
-}
-
-public enum TenantStatus
-{
-    Active,
-    Suspended,
-    Deleted
-}
-
-public enum BillingStatus
-{
-    Active,
-    Trial,
-    Overdue,
-    Cancelled
-}
-```
-
-### TenantMembership
-
-```csharp
-public class TenantMembership : Entity<TenantMembershipId>
-{
-    public TenantId TenantId { get; set; }
-    public UserId UserId { get; set; }
-    public TenantRole Role { get; set; }                   // Owner, Admin, Member
-    public TenantMembershipStatus Status { get; set; }     // Active, Pending, Inactive
-    public DateTime JoinedAt { get; set; }
-    public DateTime? InvitedAt { get; set; }
-    public UserId? InvitedBy { get; set; }
-    public DateTime UpdatedAt { get; set; }
-}
-
-public enum TenantRole
-{
-    Owner,
-    Admin,
-    Member
-}
-
-public enum TenantMembershipStatus
-{
-    Active,           // Accepted and active
-    Pending,          // Invited, awaiting acceptance
-    Inactive          // Removed or soft-deleted
-}
-```
-
-### Plan
-
-```csharp
-public class Plan : Entity<PlanId>
-{
-    public TenantId TenantId { get; set; }
-    public string Name { get; set; }                       // "Starter", "Professional", etc.
-    public PlanTier Tier { get; set; }                     // Free, Trial, Paid, Enterprise
-    public decimal MonthlyPrice { get; set; }              // USD
-    public PlanLimits Limits { get; set; }
-    public List<string> FeatureFlags { get; set; }         // Enabled features
-    public DateTime StartDate { get; set; }
-    public DateTime? EndDate { get; set; }                 // Null if active
-}
-
-public class PlanLimits
-{
-    public int MaxRoomsPerMonth { get; set; }              // 0 = unlimited
-    public int MaxParticipantsPerRoom { get; set; }
-    public int MaxStorageGB { get; set; }
-    public int MaxRecordingHoursPerMonth { get; set; }
-    public int MaxDataRetentionDays { get; set; }
-    public bool AllowRecording { get; set; }
-    public bool AllowGuestAccess { get; set; }
-    public bool AllowCustomBranding { get; set; }
-}
-
-public enum PlanTier
-{
-    Free,
-    Trial,
-    Starter,
-    Professional,
-    Enterprise
-}
-```
-
-### RetentionPolicy
-
-```csharp
-public class RetentionPolicy : Entity<RetentionPolicyId>
-{
-    public TenantId TenantId { get; set; }
-    public int RecordingRetentionDays { get; set; }        // Default 90
-    public int ChatMessageRetentionDays { get; set; }      // Default 365
-    public int FileRetentionDays { get; set; }             // Default 365
-    public int AuditLogRetentionDays { get; set; }         // Min 2555 (7 years)
-    public int UserActivityLogRetentionDays { get; set; }  // Default 365
-    public DateTime UpdatedAt { get; set; }
-}
-```
-
-### FeatureToggle
-
-```csharp
-public class FeatureToggle : Entity<FeatureToggleId>
-{
-    public string FeatureName { get; set; }                // Unique name
-    public bool IsEnabled { get; set; }
-    public FeatureToggleScope Scope { get; set; }          // Global, PerTenant, PerUser, PerRegion
-    public Dictionary<string, bool> TenantOverrides { get; set; }  // TenantId -> enabled
-    public int CanaryPercentage { get; set; }              // 0-100, % of users in canary
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-}
-
-public enum FeatureToggleScope
-{
-    Global,
-    PerTenant,
-    PerUser,
-    PerRegion,
-    Canary
-}
-```
-
----
-
-## Success Criteria
-
-- Tenants can be created in < 2 minutes
-- Branding is applied consistently across all rooms and guest pages
-- Members can be invited and roles enforced on every request
-- Plan limits are enforced (room creation blocked at limit)
-- Usage dashboard shows accurate metrics updated within 5 minutes
-- Retention policies delete old data on schedule with zero data loss
-- Feature toggles take effect within 5 minutes of configuration change
-- Multi-tenant isolation is enforced (no data leakage between tenants)
-- All plan changes are audited and reconciled with billing
-- Performance: all plan/usage endpoints respond in < 200ms p95
-
----
-
-## Edge Cases
-
-1. **Last Owner Removal:** If a user is the only Owner and requests removal, the system prevents it. Only account deletion can remove the last Owner.
-
-2. **Concurrent Plan Change:** If two admins attempt plan change simultaneously, the later one fails with "Plan was just changed. Please refresh."
-
-3. **Over-Quota Room Creation:** If quota is exceeded, room creation fails cleanly. User is prompted to upgrade or delete old rooms.
-
-4. **Mid-Month Plan Upgrade:** Pro-ration calculation: if upgraded mid-month, charge the difference for remaining days at new plan's daily rate.
-
-5. **Grace Period During Deletion:** If data is in grace period and user requests restore, it's immediately available. If grace period expires during restore request, an error occurs.
-
-6. **Retention Policy Change Retroactive:** If retention is reduced from 90 to 30 days, existing data older than 30 days is scheduled for deletion immediately.
-
-7. **Feature Toggle Race Condition:** If feature is disabled while user is using it, in-flight requests complete. Next request is rejected with 403.
-
-8. **Membership Invite Collision:** If user invites an email already pending, the old invite is cancelled and new one is created.
-
-9. **Branding Logo Expiration:** If logo is deleted from MinIO before database record is cleaned, a broken image is returned. 404 is handled gracefully.
-
-10. **Multi-Tenant Query Performance:** If a query doesn't filter by TenantId, it returns no results (fail-safe). No cross-tenant data leakage.
-
----
+### Edge Cases
+
+- **Last Owner removal**: System prevents removing the sole Owner. Only full account deletion can remove the last Owner.
+- **Concurrent plan changes**: Second simultaneous plan change request fails with a conflict error prompting refresh.
+- **Over-quota on downgrade**: Users are warned and given options when downgrading would put them over new limits.
+- **Mid-month upgrade pro-ration**: Charges are calculated for remaining days at the new plan's daily rate.
+- **Grace period race condition**: If grace period expires during a restore request, an error is returned and the user is informed.
+- **Retroactive retention reduction**: Reducing retention from 90 to 30 days immediately schedules older data for deletion.
+- **Feature toggle in-flight requests**: In-flight requests complete normally; only subsequent requests are blocked.
+- **Duplicate invite**: Re-inviting the same email cancels the previous pending invite.
+- **Broken logo reference**: If the logo file is removed before the database record is cleaned, the system gracefully handles the 404.
+- **Cross-tenant data isolation**: Queries missing tenant context return no results as a fail-safe rather than leaking data.
+- **Trial expiration with over-quota usage**: When a trial tenant is auto-downgraded to Free and their current usage exceeds Free tier limits (e.g., storage), existing data is preserved but new resource creation is blocked until usage is reduced or plan is upgraded.
+- **Suspended tenant access**: Members of a suspended tenant can view existing rooms, recordings, files, and chat history (read-only). All creation operations (rooms, recordings, file uploads, invites) are blocked until suspension is resolved.
+
+## Clarifications
+
+### Session 2026-04-04
+
+- Q: What happens when a tenant's 14-day trial expires? → A: Tenant is automatically downgraded to Free tier; all data preserved but limits reduced to Free plan levels.
+- Q: Is there a limit on how many tenants a single user can belong to? → A: Maximum 10 tenants per user (configurable, can be raised for enterprise).
+- Q: What access do members have when a tenant is suspended? → A: Read-only — members can view existing data but cannot create rooms, recordings, or upload files.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: System MUST allow authenticated users to create tenants with a unique name and URL-safe slug, automatically assigning the creator as Owner with a default trial plan.
+- **FR-002**: System MUST enforce slug uniqueness and reject reserved words (admin, api, www, etc.) during tenant creation and updates.
+- **FR-003**: System MUST support three tenant membership roles (Owner, Admin, Member) with distinct permission levels, where Owners have full control, Admins manage rooms and members, and Members can participate.
+- **FR-004**: System MUST ensure at least one Owner exists per tenant at all times, preventing the removal or role-change of the last Owner.
+- **FR-005**: System MUST send time-limited invitation emails (valid for 7 days) with accept links, supporting resend and revocation before acceptance.
+- **FR-006**: System MUST allow users to belong to up to 10 tenants (configurable limit, can be raised for enterprise) with independent roles per tenant, switching context via explicit tenant selection.
+- **FR-007**: System MUST define plans with hard limits on resources: rooms per month, participants per room, storage capacity, recording hours per month, and data retention period.
+- **FR-008**: System MUST enforce hard limits at resource creation/usage time, rejecting requests that would exceed quota with clear user-facing error messages and upgrade prompts.
+- **FR-009**: System MUST support plan tiers: Free (limited), Trial (14-day full features), Starter, Professional, and Enterprise (custom), with each tier having distinct resource limits and feature permissions.
+- **FR-010**: System MUST support immediate plan upgrades with pro-rated billing for the remainder of the billing cycle.
+- **FR-011**: System MUST support plan downgrades with options for immediate or next-billing-cycle effective date, warning users when current usage exceeds new plan limits.
+- **FR-012**: System MUST track resource usage (rooms, storage, recording hours) and provide real-time metrics via a dashboard with visual progress indicators.
+- **FR-013**: System MUST send threshold alert notifications to tenant owners when usage reaches 95% and 100% of any limit.
+- **FR-014**: System MUST provide 30-day historical usage trends for rooms, storage, and recording hours.
+- **FR-015**: System MUST support configurable retention policies per tenant and data type (recordings, chat, files, audit logs, activity logs), with a minimum of 7 years for audit logs to meet compliance requirements.
+- **FR-016**: System MUST implement a soft-delete-then-hard-delete data lifecycle: data is marked for deletion, enters a 7-day grace period (restorable), then is permanently deleted with an audit trail.
+- **FR-017**: System MUST support tenant branding: logo upload with automatic resizing, hex color customization, and optional custom subdomain configuration.
+- **FR-018**: System MUST support feature toggles with multiple scopes: per-tenant, per-user-role, per-region, and percentage-based canary rollout.
+- **FR-019**: System MUST disable features for non-enabled tenants both in UI (hidden) and API (returns appropriate error).
+- **FR-020**: System MUST publish integration events for key state changes: tenant created, membership changes, plan changes, usage limit exceeded, retention policy changes, and feature toggle changes.
+- **FR-021**: System MUST enforce tenant data isolation, ensuring no cross-tenant data access. Queries without tenant context return no results as a fail-safe.
+- **FR-022**: System MUST log all changes to tenants, memberships, plans, policies, and feature toggles in an audit trail.
+
+### Key Entities
+
+- **Tenant**: An organization workspace identified by a unique ID and URL slug. Contains branding settings, billing status (Active, Trial, Overdue, Cancelled), operational status (Active, Suspended, Deleted), and is the root container for all organizational data. When suspended, the tenant enters read-only mode: members can view existing data but cannot create new resources.
+- **Tenant Membership**: The relationship between a user and a tenant, defining their role (Owner, Admin, Member) and status (Active, Pending, Inactive). Users can have memberships across multiple tenants.
+- **Plan**: The subscription tier assigned to a tenant, defining resource limits (rooms, participants, storage, recording hours), feature permissions (recording, guest access, custom branding), pricing, and validity period.
+- **Plan Limits**: A set of resource caps and feature permissions associated with a plan, including maximum rooms per month, participants per room, storage in GB, recording hours per month, and boolean feature flags.
+- **Retention Policy**: Per-tenant configuration defining how long each data type is retained before deletion (recordings, chat messages, files, audit logs, user activity logs), with compliance-driven minimums.
+- **Feature Toggle**: A named flag controlling feature availability, supporting multiple evaluation scopes (global, per-tenant, per-user, per-region, canary percentage) with centralized management and caching.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: Users can complete tenant creation and onboarding (name, slug, optional branding) in under 2 minutes.
+- **SC-002**: Branding (logo, colors) is displayed consistently across all rooms and guest-facing pages within 1 minute of configuration.
+- **SC-003**: Team member invitations are delivered and can be accepted, with role-based access enforced on every subsequent request.
+- **SC-004**: Plan limits are enforced at 100% accuracy - resource creation is blocked when limits are reached, with zero false positives (wrongly blocking allowed actions).
+- **SC-005**: Usage dashboard displays metrics accurate to within 5 minutes of actual usage, with visual threshold indicators at 80%, 95%, and 100%.
+- **SC-006**: Retention policies delete expired data on schedule with zero unintended data loss, and all deletions are recorded in the audit trail.
+- **SC-007**: Feature toggles take effect within 5 minutes of configuration change for all affected tenants.
+- **SC-008**: Multi-tenant data isolation is absolute - no data from one tenant is ever accessible to another tenant.
+- **SC-009**: All plan changes (upgrades, downgrades) are audited and produce correct integration events for downstream billing reconciliation.
+- **SC-010**: System supports at least 10,000 concurrent active tenants without degradation in plan enforcement or usage tracking accuracy.
 
 ## Assumptions
 
-1. **Single Tenant Context:** Each request is scoped to a single tenant (via JWT claim or header). Multi-tenant queries are not performed.
-
-2. **Plan Data:** Plan definitions are bootstrapped on deployment. New plans can be added via admin API (internal, requires code change or config update).
-
-3. **Billing Integration:** Billing module (separate) handles payment processing and billing cycles. Tenancy module only manages plan assignment.
-
-4. **Email Delivery:** Invites are sent via configured SMTP/email service. Delivery is assumed to succeed. Failed sends are retried by email service.
-
-5. **MinIO Availability:** Logo uploads are stored in MinIO. MinIO is assumed available with configured S3 credentials.
-
-6. **Data Consistency:** Background jobs for usage tracking, retention cleanup, and feature toggle cache are assumed to run consistently. Short delays (minutes) are acceptable.
-
-7. **Audit Logging:** All changes to tenants, memberships, plans, and policies are logged via Serilog. Audit logs are retained per retention policy.
-
-8. **SQL Server:** Database schema enforces unique constraints on tenant slug and membership. Row-level security (optional) can enforce tenant isolation at SQL layer.
-
-9. **Redis Cache:** Feature toggles and usage metrics are cached in Redis. Cache invalidation is manual or via TTL expiry.
-
-10. **Compliance:** PDPL audit log retention (7 years minimum) is enforced. Data residency is handled by infrastructure (Epic 0).
-
----
-
-## Implementation Notes
-
-- **Tenant Isolation:** Use TenantId as a required field in all data tables. Add database-level constraints (foreign keys) to prevent orphaned data.
-- **Multi-Tenancy Filtering:** Always filter queries by `CurrentTenantId` from JWT/header. Use a middleware to set this context on every request.
-- **Plan Enforcement:** Check plan limits at creation time. Return clear errors: "Limit reached. Upgrade plan or contact support."
-- **Usage Tracking:** Implement background jobs that run daily (off-peak) to aggregate usage metrics. Cache results in Redis.
-- **Retention Cleanup:** Use a scheduled job (Hangfire, Quartz) that runs daily at midnight. Implement soft-delete-then-hard-delete pattern with logging.
-- **Feature Toggles:** Use a library like FeatureManagement (.NET) or LaunchDarkly (cloud). Evaluate on every request for consistency.
-- **Testing:** Unit tests for plan enforcement, integration tests for multi-tenant isolation, load tests for quota checks.
-- **Documentation:** Provide clear API docs with examples for plan upgrade, membership invite, and retention policy changes.
+- **Identity dependency**: The Identity module (Epic 1) provides user authentication, sessions, and JWT-based authorization. Tenant context is derived from JWT claims or explicit request headers.
+- **Trial plan defaults**: New tenants start on a 14-day free trial with full feature access. Upon trial expiration, the tenant is automatically downgraded to the Free tier — all data is preserved but resource limits are reduced to Free plan levels. Users see upgrade prompts but are never locked out.
+- **Plan definitions are pre-configured**: Plan tiers and their limits are defined by the product team and seeded during deployment. Changes to plan definitions require administrative action.
+- **Billing is external**: The Tenancy module manages plan assignment and state; actual payment processing, invoicing, and billing cycles are handled by a separate Billing module.
+- **Email delivery**: Invitation emails are sent via the platform's configured email service. Delivery reliability is managed by the email provider.
+- **Object storage availability**: Logo and file uploads rely on S3-compatible object storage being available and configured.
+- **Background processing**: Daily aggregation of usage metrics, retention cleanup jobs, and feature toggle cache refresh run reliably via the platform's background job infrastructure.
+- **Compliance baseline**: Audit log retention minimum of 7 years is based on PDPL (Personal Data Protection Law) requirements. No additional region-specific compliance beyond this is assumed for v1.
+- **Single-tenant request context**: Each API request is scoped to exactly one tenant. Multi-tenant queries are not supported.
+- **Default retention periods**: Recordings default to 90 days, chat/files to 1 year, audit logs to 7 years, activity logs to 1 year. These can be customized per tenant within allowed ranges.

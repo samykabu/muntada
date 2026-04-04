@@ -1,6 +1,6 @@
 # Muntada Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-03
+Auto-generated from all feature plans. Last updated: 2026-04-04
 
 ## Active Technologies
 - C# / .NET 10 (backend), TypeScript 5.x / React 19 (frontend), Helm 3 / YAML (infrastructure) + ASP.NET Core 10, Entity Framework Core 10, MassTransit (RabbitMQ), FluentValidation, Serilog, OpenTelemetry SDK, .NET Aspire 13.2, xUnit, Moq (backend); React 19, Vite, Redux Toolkit + RTK Query, Axios, ESLint, Jest, Playwright (frontend) (000-foundation)
