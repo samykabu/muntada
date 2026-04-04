@@ -5,7 +5,7 @@ import {
   useCreateOccurrenceMutation,
   useCreateSeriesMutation,
 } from '../api/roomsApi';
-import type { RoomTemplateResponse, RoomSettings } from '../api/roomsApi';
+import type { RoomTemplateResponse } from '../api/roomsApi';
 
 type RoomMode = 'one-off' | 'series';
 
