@@ -5,6 +5,11 @@ import { LoginPage } from './features/auth/pages/LoginPage';
 import { OtpLoginPage } from './features/auth/pages/OtpLoginPage';
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
+import { TenantProvider } from './features/tenancy/hooks/useTenant';
+import { CreateTenantPage } from './features/tenancy/pages/CreateTenantPage';
+import { TenantSettingsPage } from './features/tenancy/pages/TenantSettingsPage';
+import { UsageDashboardPage } from './features/tenancy/pages/UsageDashboardPage';
+import { AcceptInvitePage } from './features/tenancy/pages/AcceptInvitePage';
 
 /**
  * Root application component with React Router and auth routes.
@@ -13,16 +18,23 @@ import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/login/otp" element={<OtpLoginPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-        </Routes>
-      </BrowserRouter>
+      <TenantProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/login/otp" element={<OtpLoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            {/* Tenancy routes */}
+            <Route path="/create-tenant" element={<CreateTenantPage />} />
+            <Route path="/tenant/settings" element={<TenantSettingsPage />} />
+            <Route path="/tenant/usage" element={<UsageDashboardPage />} />
+            <Route path="/join-tenant" element={<AcceptInvitePage />} />
+          </Routes>
+        </BrowserRouter>
+      </TenantProvider>
     </AuthProvider>
   );
 }
