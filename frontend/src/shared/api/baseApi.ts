@@ -10,6 +10,6 @@ export const baseApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000',
   }),
-  tagTypes: ['Tenant', 'Members', 'Plan', 'Usage'],
+  tagTypes: ['Tenant', 'Members', 'Plan', 'Usage', 'RoomTemplate', 'RoomOccurrence', 'RoomSeries', 'RoomInvite', 'RoomAnalytics'],
   endpoints: () => ({}),
 });
