@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(PYTHONIOENCODING=utf-8 python \"C:/Users/sabus/.claude/skills/skill-creator/scripts/package_skill.py\" \"C:/Users/sabus/.claude/skills/review-fixer\")",
+      "Bash(mv specs/003-rooms-scheduling/spec.md specs/003-rooms-scheduling/spec-source.md)",
+      "Bash(mv specs/003-rooms-scheduling/tasks.md specs/003-rooms-scheduling/tasks-source.md)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh \"Rooms and Scheduling Module\" --json --number 3 --short-name \"rooms-scheduling\" --allow-existing-branch)"
+    ]
+  }
+}
